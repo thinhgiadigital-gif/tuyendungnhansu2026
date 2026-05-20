@@ -211,10 +211,6 @@ export default function App() {
       setSubmitError("Vui lòng nhập địa chỉ email.");
       return;
     }
-    if (!registerCVName || !registerCVData) {
-      setSubmitError("Hồ sơ CV của bạn là bắt buộc. Vui lòng tải lên tài liệu CV để ứng tuyển!");
-      return;
-    }
 
     const newCandidate: Candidate = {
       id: "cand-" + Date.now(),
@@ -1139,7 +1135,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
 
                     <div className="space-y-2">
                       <label className="text-xs font-black uppercase text-brand-brown-light tracking-widest block pl-1">
-                        Hồ sơ CV của bạn <span className="text-rose-500 font-black animate-pulse">*</span> (Bắt buộc)
+                        Hồ sơ CV của bạn
                       </label>
                       <div
                         onDragEnter={handleDrag}
