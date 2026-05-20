@@ -128,7 +128,7 @@ export default function AdminLogin({ isOpen, onClose, onSuccess }: AdminLoginPro
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="thinhgiadigital@gmail.com"
+                placeholder="Nhập tên đăng nhập..."
                 className="w-full pl-11 pr-4 py-3.5 bg-brand-gray border border-transparent focus:border-brand-yellow focus:bg-white text-sm font-bold rounded-2xl outline-none transition-all text-[#5B4333]"
               />
             </div>

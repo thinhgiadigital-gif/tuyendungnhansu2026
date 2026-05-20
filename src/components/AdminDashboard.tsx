@@ -27,52 +27,7 @@ interface AdminDashboardProps {
   onBack: () => void;
 }
 
-const SEED_CANDIDATES: Candidate[] = [
-  {
-    id: "cand-1",
-    fullName: "Phạm Minh Hoàng",
-    phone: "0912 345 678",
-    email: "hoang.pham@gmail.com",
-    position: "Chuyên viên Kinh doanh",
-    branch: "VP Võ Thị Sáu (CS1)",
-    experience: "1-2 năm",
-    note: "Tôi có 2 năm kinh nghiệm môi giới phân khúc đất nền và căn hộ nghỉ dưỡng tại Vũng Tàu. Rất mong muốn gia nhập Thịnh Gia Land.",
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(), // 4h ago
-  },
-  {
-    id: "cand-2",
-    fullName: "Nguyễn Thị Phương Thảo",
-    phone: "0987 654 321",
-    email: "thao.ntp98@outlook.com",
-    position: "Chuyên viên Marketing",
-    branch: "VP Chí Linh (CS2)",
-    experience: "Dưới 1 năm",
-    note: "Em mới ra trường chuyên ngành Digital Marketing. Biết chạy Ads cơ bản Facebook/TikTok và thiết kế ảnh Canva. Mong muốn ứng tuyển học hỏi thêm.",
-    createdAt: new Date(Date.now() - 3600000 * 18).toISOString(), // 18h ago
-  },
-  {
-    id: "cand-3",
-    fullName: "Trần Quốc Tuấn",
-    phone: "0909 112 233",
-    email: "tuantran.bds@gmail.com",
-    position: "Trưởng nhóm Kinh doanh",
-    branch: "VP Võ Thị Sáu (CS1)",
-    experience: "Trên 2 năm",
-    note: "Cựu trưởng phòng kinh doanh tại một sàn BĐS lớn, đang quản lý team 8 người. Muốn chuyển hướng tìm kiếm môi trường hoa hồng và data tốt hơn.",
-    createdAt: new Date(Date.now() - 3600000 * 36).toISOString(), // 36h ago
-  },
-  {
-    id: "cand-4",
-    fullName: "Lê Văn Đạt",
-    phone: "0355 889 900",
-    email: "datle_land@gmail.com",
-    position: "Chuyên viên Kinh doanh",
-    branch: "VP Chí Linh (CS2)",
-    experience: "Trên 5 năm",
-    note: "Có hơn 5 năm kinh nghiệm phân phối căn hộ cao cấp và biệt thự biển. Quan tâm tới giỏ hàng độc quyền và dự án lớn của Thịnh Gia.",
-    createdAt: new Date(Date.now() - 3600000 * 72).toISOString(), // 72h ago
-  }
-];
+const SEED_CANDIDATES: Candidate[] = [];
 
 export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -82,20 +37,24 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [showDeleteConfirmId, setShowDeleteConfirmId] = useState<string | null>(null);
 
-  // Load from local storage and optionally seed data
+  // Load from local storage and filter out any remaining mock seed candidates
   useEffect(() => {
     const rawData = localStorage.getItem("thinhgia_candidates");
     if (rawData) {
       try {
-        setCandidates(JSON.parse(rawData));
+        const parsed = JSON.parse(rawData) as Candidate[];
+        // Filter out any candidates with ids starting with "cand-" to clean up previous mock users
+        const cleaned = parsed.filter(c => !c.id.startsWith("cand-"));
+        setCandidates(cleaned);
+        localStorage.setItem("thinhgia_candidates", JSON.stringify(cleaned));
       } catch (e) {
         console.error("Lỗi parse dữ liệu ứng viên:", e);
-        setCandidates(SEED_CANDIDATES);
-        localStorage.setItem("thinhgia_candidates", JSON.stringify(SEED_CANDIDATES));
+        setCandidates([]);
+        localStorage.setItem("thinhgia_candidates", JSON.stringify([]));
       }
     } else {
-      setCandidates(SEED_CANDIDATES);
-      localStorage.setItem("thinhgia_candidates", JSON.stringify(SEED_CANDIDATES));
+      setCandidates([]);
+      localStorage.setItem("thinhgia_candidates", JSON.stringify([]));
     }
   }, []);
 
