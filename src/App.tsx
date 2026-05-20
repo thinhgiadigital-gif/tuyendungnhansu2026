@@ -19,7 +19,9 @@ import {
   Menu,
   X,
   Upload,
-  ShieldCheck
+  ShieldCheck,
+  Paperclip,
+  FileText
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Candidate } from "./types";
@@ -143,6 +145,8 @@ export default function App() {
   const [registerPosition, setRegisterPosition] = useState("Chuyên viên Kinh doanh");
   const [registerExperience, setRegisterExperience] = useState("Chưa có kinh nghiệm");
   const [registerNote, setRegisterNote] = useState("");
+  const [registerCVName, setRegisterCVName] = useState("");
+  const [registerCVData, setRegisterCVData] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
@@ -168,6 +172,10 @@ export default function App() {
       setSubmitError("Vui lòng nhập địa chỉ email.");
       return;
     }
+    if (!registerCVName || !registerCVData) {
+      setSubmitError("Hồ sơ CV của bạn là bắt buộc. Vui lòng tải lên tài liệu CV để ứng tuyển!");
+      return;
+    }
 
     const newCandidate: Candidate = {
       id: "cand-" + Date.now(),
@@ -178,7 +186,9 @@ export default function App() {
       branch: selectedBranch,
       experience: registerExperience,
       note: registerNote,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      cvName: registerCVName || undefined,
+      cvData: registerCVData || undefined,
     };
 
     try {
@@ -195,6 +205,8 @@ export default function App() {
       setRegisterPhone("");
       setRegisterEmail("");
       setRegisterNote("");
+      setRegisterCVName("");
+      setRegisterCVData("");
 
       // Automatically hide success alert in 5s
       setTimeout(() => {
@@ -204,6 +216,64 @@ export default function App() {
       console.error(err);
       setSubmitError("Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại!");
     }
+  };
+
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setSubmitError("File CV vượt quá kích thước 10MB. Vui lòng chọn file nhẹ hơn!");
+        return;
+      }
+      setSubmitError("");
+      setRegisterCVName(file.name);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setRegisterCVData(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setSubmitError("File CV vượt quá kích thước 10MB. Vui lòng chọn file nhẹ hơn!");
+        return;
+      }
+      setSubmitError("");
+      setRegisterCVName(file.name);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setRegisterCVData(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeAttachedCV = () => {
+    setRegisterCVName("");
+    setRegisterCVData("");
   };
 
   useEffect(() => {
@@ -318,9 +388,14 @@ export default function App() {
         <section className="relative min-h-[90vh] flex items-center pt-20 overflow-hidden">
           {/* Background Elements */}
           <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-brand-gray/40 backdrop-blur-[2px]"></div>
-            {/* Cinematic Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-brand-brown/10 via-transparent to-tech-blue/5"></div>
+            <img 
+              src="https://odwintravel.vn/wp-content/uploads/2025/11/thap-tam-thang-vung-tau-1.jpg" 
+              alt="Tháp Tam Thắng Vũng Tàu" 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+            {/* Soft linear gradient from left (solid brand-gray) to right (fully transparent) to show the original image completely intact on the right */}
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-gray via-brand-gray/60 to-transparent"></div>
           </div>
 
           <div className="container mx-auto px-4 md:px-6 relative z-10">
@@ -941,6 +1016,66 @@ export default function App() {
                         rows={4}
                         className="w-full px-6 py-4 bg-brand-gray rounded-2xl border border-transparent focus:border-brand-yellow focus:bg-white outline-none font-bold transition-all text-brand-brown resize-none"
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-brand-brown-light tracking-widest block pl-1">
+                        Hồ sơ CV của bạn <span className="text-rose-500 font-black animate-pulse">*</span> (Bắt buộc)
+                      </label>
+                      <div
+                        onDragEnter={handleDrag}
+                        onDragOver={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDrop={handleDrop}
+                        className={`relative w-full p-6 md:p-8 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-3 transition-all ${
+                          isDragActive
+                            ? "bg-brand-yellow/10 border-brand-yellow scale-[1.01]"
+                            : registerCVName
+                              ? "bg-emerald-50/40 border-emerald-500/30 text-brand-brown"
+                              : "bg-brand-gray border-brand-brown/10 hover:bg-brand-yellow/5"
+                        }`}
+                      >
+                        {registerCVName ? (
+                          <div className="flex flex-col items-center text-center gap-2 w-full">
+                            <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shadow-sm">
+                              <FileText size={22} />
+                            </div>
+                            <div className="space-y-1 w-full max-w-[80%]">
+                              <p className="text-sm font-black text-brand-brown truncate" title={registerCVName}>
+                                {registerCVName}
+                              </p>
+                              <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">
+                                Đã sẵn sàng nộp
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={removeAttachedCV}
+                              className="mt-2 px-4 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <X size={12} /> Hủy bỏ file
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center gap-2 cursor-pointer w-full h-full py-2">
+                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-brand-brown shadow-sm group-hover:bg-brand-yellow/10 transition-all">
+                              <Upload size={20} className="text-[#a88d6c]" />
+                            </div>
+                            <span className="text-sm font-black text-brand-brown mt-1">
+                              Kéo thả file CV hoặc click để duyệt file
+                            </span>
+                            <span className="text-[10px] text-brand-brown/40 font-semibold uppercase tracking-wider">
+                              Hỗ trợ định dạng PDF, DOCX, DOC, JPG (Tối đa 10MB)
+                            </span>
+                            <input
+                              type="file"
+                              accept=".pdf,.docx,.doc,.jpg,.jpeg,.png"
+                              onChange={handleFileChange}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            />
+                          </label>
+                        )}
+                      </div>
                     </div>
 
                     <button 

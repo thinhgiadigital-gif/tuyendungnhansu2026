@@ -17,7 +17,9 @@ import {
   SlidersHorizontal,
   X,
   FileSpreadsheet,
-  LogOut
+  LogOut,
+  FileText,
+  Paperclip
 } from "lucide-react";
 import { Candidate } from "../types";
 
@@ -143,6 +145,20 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     localStorage.removeItem("thinhgia_admin_authenticated");
     localStorage.removeItem("thinhgia_admin_session_time");
     onBack();
+  };
+
+  const handleDownloadCV = (candidate: Candidate) => {
+    if (!candidate.cvData || !candidate.cvName) return;
+    try {
+      const link = document.createElement("a");
+      link.href = candidate.cvData;
+      link.download = candidate.cvName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Lỗi tải xuống CV:", err);
+    }
   };
 
   // Export to CSV helper
@@ -379,8 +395,11 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                     >
                       {/* Name and Date */}
                       <td className="px-6 py-4.5 whitespace-nowrap">
-                        <div className="font-extrabold text-brand-brown text-base group-hover:text-brand-yellow transition-colors">
+                        <div className="font-extrabold text-brand-brown text-base group-hover:text-brand-yellow transition-colors flex items-center gap-1.5">
                           {candidate.fullName}
+                          {candidate.cvName && (
+                            <Paperclip size={13} className="text-emerald-600 shrink-0" title={`Đính kèm tệp CV: ${candidate.cvName}`} />
+                          )}
                         </div>
                         <div className="text-[10px] text-brand-brown/40 flex items-center gap-1.5 mt-1">
                           <Calendar size={11} />
@@ -577,6 +596,39 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Candidate CV Attachment block */}
+              <div className="bg-white rounded-[1.5rem] border border-brand-brown/5 shadow-subtle p-6 space-y-3">
+                <h4 className="text-xs font-extrabold uppercase tracking-widest text-[#a88d6c] border-b border-brand-brown/5 pb-2">Hồ sơ CV đính kèm</h4>
+                {selectedCandidate.cvName && selectedCandidate.cvData ? (
+                  <div className="flex items-center justify-between p-4 bg-emerald-50/40 border border-emerald-500/20 rounded-2xl">
+                    <div className="flex items-center gap-3 overflow-hidden mr-2">
+                      <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                        <FileText size={18} />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-sm font-black text-brand-brown truncate" title={selectedCandidate.cvName}>
+                          {selectedCandidate.cvName}
+                        </p>
+                        <p className="text-[10px] text-emerald-600 font-extrabold tracking-wider uppercase mt-0.5">
+                          Tập tin ngoại tuyến
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadCV(selectedCandidate)}
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.02] text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-800/10 shrink-0 cursor-pointer"
+                    >
+                      <Download size={13} /> TẢI VỀ
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-brand-gray text-brand-brown/50 rounded-2xl text-xs font-bold flex items-center gap-2">
+                    <Paperclip size={14} className="text-brand-brown/30" />
+                    Không có tài liệu CV đính kèm cho ứng viên này.
+                  </div>
+                )}
               </div>
 
               {/* Candidate Letter/Message block */}

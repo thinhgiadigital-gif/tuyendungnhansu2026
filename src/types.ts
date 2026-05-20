@@ -8,4 +8,6 @@ export interface Candidate {
   experience: string;
   note: string;
   createdAt: string;
+  cvName?: string;
+  cvData?: string; // base64 representation or data URL
 }
