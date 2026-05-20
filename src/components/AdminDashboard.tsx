@@ -118,23 +118,23 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
         {
           id: "emp-1",
           fullName: "Phan Thanh Hà",
-          email: "tuyendung1@thinhgialand.com",
+          email: "quanly@thinhgialand.com",
           password: "password123",
-          role: "staff",
+          role: "staff", // Quản lý tuyển dụng
           permissions: {
             canViewCandidates: true,
             canDeleteCandidates: false,
             canExportExcel: true,
-            canManageStaff: false,
+            canManageStaff: true, // "tạo tài khoản đăng nhập"
           },
           createdAt: new Date().toISOString()
         },
         {
           id: "emp-2",
           fullName: "Nguyễn Văn Hùng",
-          email: "viewonly@thinhgialand.com",
+          email: "phuta@thinhgialand.com",
           password: "view123",
-          role: "view_only",
+          role: "view_only", // Phụ tá
           permissions: {
             canViewCandidates: true,
             canDeleteCandidates: false,
@@ -155,17 +155,18 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       setEmpCanViewCandidates(true);
       setEmpCanDeleteCandidates(true);
       setEmpCanExportExcel(true);
-      setEmpCanManageStaff(false); // only thinhgiadigital has master/ownership access
+      setEmpCanManageStaff(false);
     } else if (role === "view_only") {
       setEmpCanViewCandidates(true);
       setEmpCanDeleteCandidates(false);
       setEmpCanExportExcel(false);
       setEmpCanManageStaff(false);
     } else {
+      // staff: "Quản lý tuyển dụng" has view, save file (export excel) and create account (manage staff) permissions
       setEmpCanViewCandidates(true);
       setEmpCanDeleteCandidates(false);
       setEmpCanExportExcel(true);
-      setEmpCanManageStaff(false);
+      setEmpCanManageStaff(true);
     }
   };
 
@@ -431,8 +432,8 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
             </div>
           </div>
 
-          {/* Tab Selector inside header if super admin */}
-          {isSuperAdmin && (
+          {/* Tab Selector inside header if super admin or has permit to manage staff */}
+          {(isSuperAdmin || currentPermissions.canManageStaff) && (
             <div className="flex bg-brand-gray p-1 rounded-2xl border border-brand-brown/5">
               <button
                 onClick={() => setActiveTab("candidates")}
@@ -815,12 +816,13 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                                   ? "bg-gray-50 text-gray-700 border-gray-200"
                                   : "bg-blue-50 text-blue-700 border-blue-200"
                               }`}>
-                                {emp.role === "admin" ? "Admin" : emp.role === "view_only" ? "Chỉ Xem" : "Tuyển Dụng"}
+                                {emp.role === "admin" ? "Admin Phụ" : emp.role === "view_only" ? "Phụ tá" : "Quản lý tuyển dụng"}
                               </span>
                               <div className="flex gap-1.5 mt-1.5 flex-wrap">
                                 {emp.permissions.canViewCandidates && <span className="bg-emerald-50 text-emerald-700 px-1 py-0.5 text-[8px] font-black rounded border border-emerald-100">XEM HS</span>}
                                 {emp.permissions.canDeleteCandidates && <span className="bg-rose-50 text-rose-700 px-1 py-0.5 text-[8px] font-black rounded border border-rose-100">XÓA HS</span>}
                                 {emp.permissions.canExportExcel && <span className="bg-emerald-50 text-emerald-700 px-1 py-0.5 text-[8px] font-black rounded border border-emerald-100">XUẤT EXCEL</span>}
+                                {emp.permissions.canManageStaff && <span className="bg-blue-50 text-blue-700 px-1 py-0.5 text-[8px] font-black rounded border border-blue-100">TẠO TK & PHÂN QUYỀN</span>}
                               </div>
                             </td>
                             <td className="px-6 py-4 text-right">
@@ -1148,9 +1150,9 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                   onChange={(e) => handleRoleChange(e.target.value as any)}
                   className="w-full px-4 py-3 bg-white rounded-2xl border border-brand-brown/10 focus:border-brand-yellow outline-none text-sm font-bold cursor-pointer"
                 >
-                  <option value="staff">Chuyên viên Tuyển dụng (Staff)</option>
-                  <option value="admin">Quản trị viên phụ (Admin)</option>
-                  <option value="view_only">Chỉ Xem số liệu (View)</option>
+                  <option value="staff">Quản lý tuyển dụng (Xem, Lưu tệp, Tạo tài khoản)</option>
+                  <option value="view_only">Phụ tá (Chỉ xem danh sách)</option>
+                  <option value="admin">Quản trị viên phụ (Toàn quyền ứng viên)</option>
                 </select>
               </div>
 
@@ -1190,7 +1192,18 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                       onChange={(e) => setEmpCanExportExcel(e.target.checked)}
                       className="rounded border-brand-brown/20 text-brand-yellow"
                     />
-                    <span className={empRole === "view_only" ? "text-brand-brown/30" : ""}>Quyền Xuất tệp Excel / CSV</span>
+                    <span className={empRole === "view_only" ? "text-brand-brown/30" : ""}>Quyền Xuất tệp Excel / CSV (Lưu tệp)</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold">
+                    <input
+                      type="checkbox"
+                      checked={empCanManageStaff}
+                      disabled={empRole === "view_only"}
+                      onChange={(e) => setEmpCanManageStaff(e.target.checked)}
+                      className="rounded border-brand-brown/20 text-brand-yellow"
+                    />
+                    <span className={empRole === "view_only" ? "text-brand-brown/30" : ""}>Quyền Tạo tài khoản & Phân quyền nhân sự</span>
                   </label>
                 </div>
               </div>
