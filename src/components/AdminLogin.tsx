@@ -35,22 +35,51 @@ export default function AdminLogin({ isOpen, onClose, onSuccess }: AdminLoginPro
 
     setTimeout(() => {
       setLoading(false);
-      const isEmailValid = cleanEmail === "thinhgiadigital@gmail.com";
-      const isPasswordValid = 
+      
+      // 1. Check Super Admin
+      const isSuperEmail = cleanEmail === "thinhgiadigital@gmail.com";
+      const isSuperPass = 
         cleanPassword === "0931 522 686" || 
         cleanPassword === "0931522686";
 
-      if (isEmailValid && isPasswordValid) {
-        // Safe administrative session token
+      if (isSuperEmail && isSuperPass) {
         localStorage.setItem("thinhgia_admin_authenticated", "true");
+        localStorage.setItem("thinhgia_admin_email", "thinhgiadigital@gmail.com");
         localStorage.setItem("thinhgia_admin_session_time", Date.now().toString());
         onSuccess();
-      } else {
-        if (!isEmailValid) {
-          setError("Tên đăng nhập không chính xác.");
-        } else {
-          setError("Mật khẩu bảo mật không chính xác. Vui lòng thử lại!");
+        return;
+      }
+
+      // 2. Check Custom Employees
+      try {
+        const rawEmployees = localStorage.getItem("thinhgia_employees");
+        if (rawEmployees) {
+          const employees = JSON.parse(rawEmployees) as any[];
+          const foundEmp = employees.find(emp => emp.email.trim().toLowerCase() === cleanEmail);
+          
+          if (foundEmp) {
+            const expectedPass = foundEmp.password || "123456"; // default fallback
+            if (cleanPassword === expectedPass) {
+              localStorage.setItem("thinhgia_admin_authenticated", "true");
+              localStorage.setItem("thinhgia_admin_email", foundEmp.email);
+              localStorage.setItem("thinhgia_admin_session_time", Date.now().toString());
+              onSuccess();
+              return;
+            } else {
+              setError("Mật khẩu của tài khoản nhân sự không chính xác!");
+              return;
+            }
+          }
         }
+      } catch (err) {
+        console.error("Lỗi xác minh tài khoản nhân sự:", err);
+      }
+
+      // If we got here, it's a failure
+      if (isSuperEmail) {
+        setError("Mật khẩu bảo mật cho tài khoản quản trị tổng không chính xác.");
+      } else {
+        setError("Tài khoản chưa được phân quyền hoặc mật khẩu không chính xác.");
       }
     }, 600);
   };

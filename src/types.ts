@@ -11,3 +11,19 @@ export interface Candidate {
   cvName?: string;
   cvData?: string; // base64 representation or data URL
 }
+
+export interface Employee {
+  id: string;
+  fullName: string;
+  email: string;
+  password?: string;
+  role: "super_admin" | "admin" | "view_only" | "staff";
+  permissions: {
+    canViewCandidates: boolean;
+    canDeleteCandidates: boolean;
+    canExportExcel: boolean;
+    canManageStaff: boolean;
+  };
+  createdAt: string;
+}
+
