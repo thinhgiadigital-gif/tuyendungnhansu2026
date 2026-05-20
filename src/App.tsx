@@ -230,12 +230,60 @@ export default function App() {
       cvData: registerCVData || undefined,
     };
 
+    const sendEmailNotification = async (candidate: Candidate) => {
+      const accessKey = (import.meta as any).env?.VITE_WEB3FORMS_ACCESS_KEY;
+      
+      try {
+        const formData = new FormData();
+        // Web3Forms accepts a verified developer access key to route mail directly. 
+        // We use your generated Web3Forms Access Key: 26c27811-d686-45e7-a29c-c46ca680fd2e
+        formData.append("access_key", accessKey || "26c27811-d686-45e7-a29c-c46ca680fd2e");
+        formData.append("subject", `[ỨNG VIÊN MỚI] - ${candidate.fullName} ứng tuyển vị trí ${candidate.position}`);
+        formData.append("from_name", "Tuyển dụng Thịnh Gia Land");
+        formData.append("to", "thinhgiadigital@gmail.com");
+        
+        const emailContent = `
+=== THÔNG TIN ỨNG VIÊN MỚI ĐĂNG KÝ ===
+Họ và tên: ${candidate.fullName}
+Số điện thoại: ${candidate.phone}
+Email: ${candidate.email}
+Vị trí ứng tuyển: ${candidate.position}
+Chi nhánh mong muốn làm việc: ${candidate.branch}
+Kinh nghiệm làm việc: ${candidate.experience}
+Ghi chú thêm: ${candidate.note || "(Không có ghi chú)"}
+Tên file CV đính kèm: ${candidate.cvName || "(Không đính kèm)"}
+Thời gian nộp: ${new Date(candidate.createdAt).toLocaleString("vi-VN")}
+
+--------------------------------------------------
+Đây là thông báo tự động từ Hệ thống Tuyển dụng Thịnh Gia Land.
+Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin hồ sơ của ứng viên.
+        `;
+        formData.append("message", emailContent);
+
+        const response = await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+          console.log("Đã gửi thư báo nhắc nhở thành công tới thinhgiadigital@gmail.com!");
+        } else {
+          console.warn("Web3Forms API Response: " + data.message);
+        }
+      } catch (err) {
+        console.error("Lỗi gửi thông báo email:", err);
+      }
+    };
+
     try {
       const existingRaw = localStorage.getItem("thinhgia_candidates");
       const currentCandidates: Candidate[] = existingRaw ? JSON.parse(existingRaw) : [];
       const updated = [newCandidate, ...currentCandidates];
       localStorage.setItem("thinhgia_candidates", JSON.stringify(updated));
       
+      // Send real automated email notification instantly in the background
+      sendEmailNotification(newCandidate);
+
       setSubmitSuccess(true);
       setSubmitError("");
       
@@ -984,7 +1032,7 @@ export default function App() {
                       <CheckCircle2 className="w-6 h-6 shrink-0 mt-0.5 animate-bounce" />
                       <div>
                         <h4 className="font-extrabold text-[#0e6c38] text-base mb-1">Đăng ký ứng tuyển thành công!</h4>
-                        <p className="text-xs text-[#0e6c38]/80 leading-relaxed font-medium">Hồ sơ ứng viên đã được tự động lưu về trang quản trị theo thời gian thực. Ban nhân sự sẽ liên hệ với bạn trong thời gian sớm nhất.</p>
+                        <p className="text-xs text-[#0e6c38]/80 leading-relaxed font-medium">Hồ sơ đã được lưu, đồng thời hệ thống đã gửi email thông báo nhắc nhở đến ban quản trị (thinhgiadigital@gmail.com). Chúng tôi sẽ liên hệ lại sớm nhất!</p>
                       </div>
                     </motion.div>
                   )}
