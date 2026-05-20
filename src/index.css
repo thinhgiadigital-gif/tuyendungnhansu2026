@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-brand-yellow: #F4AA16;
+  --color-brand-yellow-hover: #D89512;
+  --color-brand-brown: #5B4333;
+  --color-brand-brown-light: #7A5A43;
+  --color-brand-gray: #F5F5F5;
+  --color-tech-blue: #8EDCFF;
+
+  --shadow-premium: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+}
+
+@layer base {
+  body {
+    @apply bg-brand-gray text-brand-brown antialiased scroll-smooth;
+  }
+}
+
+.glass {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
+}
+
+.glow-yellow {
+  box-shadow: 0 0 20px rgba(244, 170, 22, 0.3);
+}
+
+.glow-blue {
+  box-shadow: 0 0 20px rgba(142, 220, 255, 0.2);
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-brown to-brand-brown-light;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
