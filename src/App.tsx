@@ -150,6 +150,45 @@ export default function App() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  const [timeLeft, setTimeLeft] = useState({
+    days: 29,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+
+  useEffect(() => {
+    let targetTime = localStorage.getItem("thinhgia_countdown_target");
+    if (!targetTime) {
+      // Set to exactly 29 days from now
+      const initialTarget = Date.now() + 29 * 24 * 60 * 60 * 1000;
+      localStorage.setItem("thinhgia_countdown_target", initialTarget.toString());
+      targetTime = initialTarget.toString();
+    }
+    
+    const calculateTimeLeft = () => {
+      const difference = parseInt(targetTime!) - Date.now();
+      if (difference <= 0) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      }
+      
+      return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60)
+      };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const handleApplyForBranch = (branchName: string) => {
     setSelectedBranch(branchName);
     const element = document.getElementById("apply");
@@ -890,6 +929,38 @@ export default function App() {
                           <p className="font-bold">90 Võ Thị Sáu, P. Vũng Tàu, TP. HCM</p>
                         </div>
                       </div>
+                    </div>
+                    
+                    {/* Countdown Banner */}
+                    <div className="mt-10 pt-8 border-t border-white/10">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Clock size={16} className="text-brand-yellow animate-pulse" />
+                        <span className="text-xs font-extrabold uppercase tracking-widest text-brand-yellow">Thời gian đăng ký còn lại</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 gap-2.5">
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5 flex flex-col items-center justify-center backdrop-blur-sm">
+                          <span className="text-2xl font-black text-brand-yellow font-mono">{String(timeLeft.days).padStart(2, '0')}</span>
+                          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest mt-1">Ngày</span>
+                        </div>
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5 flex flex-col items-center justify-center backdrop-blur-sm">
+                          <span className="text-2xl font-black text-brand-yellow font-mono">{String(timeLeft.hours).padStart(2, '0')}</span>
+                          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest mt-1">Giờ</span>
+                        </div>
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5 flex flex-col items-center justify-center backdrop-blur-sm">
+                          <span className="text-2xl font-black text-brand-yellow font-mono">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest mt-1">Phút</span>
+                        </div>
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5 flex flex-col items-center justify-center backdrop-blur-sm">
+                          <span className="text-2xl font-black text-[#FF8E8E] font-mono">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest mt-1">Giây</span>
+                        </div>
+                      </div>
+                      
+                      <p className="text-[11px] text-white/50 font-semibold mt-3 flex items-center gap-2">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Đang nhận hồ sơ ứng tuyển trực tuyến đợt này
+                      </p>
                     </div>
                   </div>
                   
