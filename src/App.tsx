@@ -28,7 +28,7 @@ import { Candidate } from "./types";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminLogin from "./components/AdminLogin";
 import { doc, setDoc } from "firebase/firestore";
-import { db, OperationType, handleFirestoreError } from "./firebase";
+import { db, OperationType, handleFirestoreError, ensureAuth } from "./firebase";
 
 const NAV_LINKS = [
   { name: "Giới thiệu", href: "#about" },
@@ -230,6 +230,7 @@ export default function App() {
 
     // Save to Firestore Database
     try {
+      await ensureAuth();
       await setDoc(doc(db, "candidates", newCandidate.id), newCandidate);
     } catch (fErr) {
       console.error("Firestore candidate save failed, invoking handler:", fErr);

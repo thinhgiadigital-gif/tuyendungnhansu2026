@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 import { ShieldAlert, X, Eye, EyeOff, Mail, Lock, ArrowRight, CornerDownRight } from "lucide-react";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, ensureAuth } from "../firebase";
 
 interface AdminLoginProps {
   isOpen: boolean;
@@ -50,6 +50,9 @@ export default function AdminLogin({ isOpen, onClose, onSuccess }: AdminLoginPro
         onSuccess();
         return;
       }
+
+      // Ensure anonymous auth session is ready for firestore rules before querying
+      await ensureAuth();
 
       // 2. Check Custom Employees in Cloud Firestore
       const q = query(collection(db, "employees"), where("email", "==", cleanEmail));
