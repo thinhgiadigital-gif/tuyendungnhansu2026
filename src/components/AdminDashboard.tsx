@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { Candidate, Employee } from "../types";
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
-import { db, OperationType, handleFirestoreError } from "../firebase";
+import { db, OperationType, handleFirestoreError, ensureAuth } from "../firebase";
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -165,6 +165,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
   const handleDeleteEmployee = async (id: string) => {
     try {
+      await ensureAuth();
       await deleteDoc(doc(db, "employees", id));
       setShowEmpDeleteConfirmId(null);
     } catch (fErr) {
@@ -203,6 +204,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     }
 
     try {
+      await ensureAuth();
       const employeeDoc: Employee = editingEmployee ? {
         ...editingEmployee,
         fullName: empFullName.trim(),
@@ -291,6 +293,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   // Delete handler
   const handleDelete = async (id: string) => {
     try {
+      await ensureAuth();
       await deleteDoc(doc(db, "candidates", id));
       if (selectedCandidate?.id === id) {
         setSelectedCandidate(null);
