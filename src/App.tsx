@@ -27,6 +27,8 @@ import React, { useState, useEffect } from "react";
 import { Candidate } from "./types";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminLogin from "./components/AdminLogin";
+import { doc, setDoc } from "firebase/firestore";
+import { db, OperationType, handleFirestoreError } from "./firebase";
 
 const NAV_LINKS = [
   { name: "Giới thiệu", href: "#about" },
@@ -197,7 +199,7 @@ export default function App() {
     }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!registerName.trim()) {
       setSubmitError("Vui lòng nhập họ và tên.");
@@ -225,6 +227,14 @@ export default function App() {
       cvName: registerCVName || undefined,
       cvData: registerCVData || undefined,
     };
+
+    // Save to Firestore Database
+    try {
+      await setDoc(doc(db, "candidates", newCandidate.id), newCandidate);
+    } catch (fErr) {
+      console.error("Firestore candidate save failed, invoking handler:", fErr);
+      handleFirestoreError(fErr, OperationType.CREATE, `candidates/${newCandidate.id}`);
+    }
 
     const sendEmailNotification = async (candidate: Candidate) => {
       const accessKey = (import.meta as any).env?.VITE_WEB3FORMS_ACCESS_KEY;

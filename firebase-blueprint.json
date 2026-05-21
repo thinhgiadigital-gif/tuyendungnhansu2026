@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "Candidate": {
+      "title": "Candidate",
+      "description": "Information about a recruitment candidate.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the candidate" },
+        "fullName": { "type": "string", "description": "Candidate full name" },
+        "phone": { "type": "string", "description": "Candidate contact number" },
+        "email": { "type": "string", "description": "Candidate email address" },
+        "position": { "type": "string", "description": "Recruitment target position" },
+        "branch": { "type": "string", "description": "Target office branch" },
+        "experience": { "type": "string", "description": "Brief description of background and experience level" },
+        "note": { "type": "string", "description": "Additional notes" },
+        "createdAt": { "type": "string", "description": "Document creation timestamp" },
+        "cvName": { "type": "string", "description": "Name of the uploaded CV file" },
+        "cvData": { "type": "string", "description": "Base64 string or link for the document" }
+      },
+      "required": ["id", "fullName", "phone", "email", "position", "branch", "experience", "note", "createdAt"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "Operational team members authorized to access the dashboard",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the operator" },
+        "fullName": { "type": "string", "description": "Operator display name" },
+        "email": { "type": "string", "description": "Sign-in email address matching password" },
+        "password": { "type": "string", "description": "Plaintext or hashed passkey" },
+        "role": { "type": "string", "enum": ["super_admin", "admin", "view_only", "staff"], "description": "Privilege tier in the admin dashboard" },
+        "permissions": { "type": "object", "description": "Detailed access boolean toggles" },
+        "createdAt": { "type": "string", "description": "Time the employee account was initialized" }
+      },
+      "required": ["id", "fullName", "email", "role", "permissions", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/candidates/{candidateId}": {
+      "schema": "Candidate",
+      "description": "Recruitment applicants list."
+    },
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "Authorized hiring staff and operators."
+    }
+  }
+}

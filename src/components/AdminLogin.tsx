@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { ShieldAlert, X, Eye, EyeOff, Mail, Lock, ArrowRight, CornerDownRight } from "lucide-react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
 
 interface AdminLoginProps {
   isOpen: boolean;
@@ -17,7 +19,7 @@ export default function AdminLogin({ isOpen, onClose, onSuccess }: AdminLoginPro
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -33,10 +35,8 @@ export default function AdminLogin({ isOpen, onClose, onSuccess }: AdminLoginPro
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    setTimeout(() => {
-      setLoading(false);
-      
-      // 1. Check Super Admin
+    try {
+      // 1. Check Super Admin with hardcoded secret
       const isSuperEmail = cleanEmail === "thinhgiadigital@gmail.com";
       const isSuperPass = 
         cleanPassword === "0931 522 686" || 
@@ -46,42 +46,46 @@ export default function AdminLogin({ isOpen, onClose, onSuccess }: AdminLoginPro
         localStorage.setItem("thinhgia_admin_authenticated", "true");
         localStorage.setItem("thinhgia_admin_email", "thinhgiadigital@gmail.com");
         localStorage.setItem("thinhgia_admin_session_time", Date.now().toString());
+        setLoading(false);
         onSuccess();
         return;
       }
 
-      // 2. Check Custom Employees
-      try {
-        const rawEmployees = localStorage.getItem("thinhgia_employees");
-        if (rawEmployees) {
-          const employees = JSON.parse(rawEmployees) as any[];
-          const foundEmp = employees.find(emp => emp.email.trim().toLowerCase() === cleanEmail);
-          
-          if (foundEmp) {
-            const expectedPass = foundEmp.password || "123456"; // default fallback
-            if (cleanPassword === expectedPass) {
-              localStorage.setItem("thinhgia_admin_authenticated", "true");
-              localStorage.setItem("thinhgia_admin_email", foundEmp.email);
-              localStorage.setItem("thinhgia_admin_session_time", Date.now().toString());
-              onSuccess();
-              return;
-            } else {
-              setError("Mật khẩu của tài khoản nhân sự không chính xác!");
-              return;
-            }
-          }
+      // 2. Check Custom Employees in Cloud Firestore
+      const q = query(collection(db, "employees"), where("email", "==", cleanEmail));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const foundDoc = querySnapshot.docs[0];
+        const foundEmp = foundDoc.data() as any;
+        const expectedPass = foundEmp.password || "123456"; // default fallback
+
+        if (cleanPassword === expectedPass) {
+          localStorage.setItem("thinhgia_admin_authenticated", "true");
+          localStorage.setItem("thinhgia_admin_email", foundEmp.email);
+          localStorage.setItem("thinhgia_admin_session_time", Date.now().toString());
+          setLoading(false);
+          onSuccess();
+          return;
+        } else {
+          setError("Mật khẩu của tài khoản nhân sự không chính xác!");
+          setLoading(false);
+          return;
         }
-      } catch (err) {
-        console.error("Lỗi xác minh tài khoản nhân sự:", err);
       }
 
       // If we got here, it's a failure
+      setLoading(false);
       if (isSuperEmail) {
         setError("Mật khẩu bảo mật cho tài khoản quản trị tổng không chính xác.");
       } else {
         setError("Tài khoản chưa được phân quyền hoặc mật khẩu không chính xác.");
       }
-    }, 600);
+    } catch (err) {
+      console.error("Lỗi xác minh tài khoản nhân sự:", err);
+      setLoading(false);
+      setError("Đã xảy ra lỗi hệ thống khi kết nối cơ sở dữ liệu. Vui lòng thử lại!");
+    }
   };
 
   return (

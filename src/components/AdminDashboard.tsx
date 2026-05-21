@@ -27,6 +27,8 @@ import {
   Check
 } from "lucide-react";
 import { Candidate, Employee } from "../types";
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { db, OperationType, handleFirestoreError } from "../firebase";
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -71,7 +73,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     canManageStaff: true,
   });
 
-  // Track the permissions of the currently logged-in administrator from localStorage
+  // Track the permissions of the currently logged-in administrator from the real-time employees state
   useEffect(() => {
     if (isSuperAdmin) {
       setCurrentPermissions({
@@ -81,48 +83,37 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
         canManageStaff: true,
       });
     } else {
-      const rawEmployees = localStorage.getItem("thinhgia_employees");
-      if (rawEmployees) {
-        try {
-          const list = JSON.parse(rawEmployees) as Employee[];
-          const found = list.find(e => e.email.toLowerCase().trim() === currentAdminEmail.toLowerCase().trim());
-          if (found) {
-            setCurrentPermissions(found.permissions);
-          } else {
-            // Default restrictive view fallback
-            setCurrentPermissions({
-              canViewCandidates: true,
-              canDeleteCandidates: false,
-              canExportExcel: false,
-              canManageStaff: false,
-            });
-          }
-        } catch (err) {
-          console.error("Lỗi parse quyền hạn nhân viên:", err);
-        }
+      const found = employees.find(e => e.email.toLowerCase().trim() === currentAdminEmail.toLowerCase().trim());
+      if (found) {
+        setCurrentPermissions(found.permissions);
+      } else {
+        // Default restrictive view fallback
+        setCurrentPermissions({
+          canViewCandidates: true,
+          canDeleteCandidates: false,
+          canExportExcel: false,
+          canManageStaff: false,
+        });
       }
     }
   }, [currentAdminEmail, isSuperAdmin, employees]);
 
-  // Load and filter initial staff accounts - removing simulated seeded template employees
+  // Load and filter initial staff accounts - synced with real-time Firestore DB
   useEffect(() => {
-    const rawEmployees = localStorage.getItem("thinhgia_employees");
-    let initialList: Employee[] = [];
-    if (rawEmployees) {
-      try {
-        const parsed = JSON.parse(rawEmployees) as Employee[];
-        // Keep only operational staff registered or created through the interface
-        initialList = parsed.filter(emp => emp.id !== "emp-1" && emp.id !== "emp-2");
-        if (parsed.length !== initialList.length) {
-          localStorage.setItem("thinhgia_employees", JSON.stringify(initialList));
-        }
-      } catch (err) {
-        console.error("Lỗi parse danh sách nhân viên:", err);
-      }
-    } else {
-      localStorage.setItem("thinhgia_employees", JSON.stringify([]));
-    }
-    setEmployees(initialList);
+    const unsubscribe = onSnapshot(collection(db, "employees"), (snapshot) => {
+      const list: Employee[] = [];
+      snapshot.forEach((doc) => {
+        list.push(doc.data() as Employee);
+      });
+      // Sort: newest accounts first
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setEmployees(list);
+    }, (err) => {
+      console.error("Firestore onSnapshot error on employees collection:", err);
+      handleFirestoreError(err, OperationType.LIST, "employees");
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleRoleChange = (role: "admin" | "view_only" | "staff") => {
@@ -172,14 +163,17 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     setShowEmployeeModal(true);
   };
 
-  const handleDeleteEmployee = (id: string) => {
-    const updated = employees.filter(e => e.id !== id);
-    setEmployees(updated);
-    localStorage.setItem("thinhgia_employees", JSON.stringify(updated));
-    setShowEmpDeleteConfirmId(null);
+  const handleDeleteEmployee = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "employees", id));
+      setShowEmpDeleteConfirmId(null);
+    } catch (fErr) {
+      console.error("Firestore employee delete failed, invoking handler:", fErr);
+      handleFirestoreError(fErr, OperationType.DELETE, `employees/${id}`);
+    }
   };
 
-  const handleSaveEmployee = (e: React.FormEvent) => {
+  const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmployeeError("");
 
@@ -208,29 +202,20 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       return;
     }
 
-    let updatedEmployees: Employee[] = [];
-
-    if (editingEmployee) {
-      updatedEmployees = employees.map(emp => {
-        if (emp.id === editingEmployee.id) {
-          return {
-            ...emp,
-            fullName: empFullName.trim(),
-            email: emailCheck,
-            password: empPassword.trim() ? empPassword.trim() : emp.password,
-            role: empRole,
-            permissions: {
-              canViewCandidates: empCanViewCandidates,
-              canDeleteCandidates: empCanDeleteCandidates,
-              canExportExcel: empCanExportExcel,
-              canManageStaff: empCanManageStaff,
-            }
-          };
+    try {
+      const employeeDoc: Employee = editingEmployee ? {
+        ...editingEmployee,
+        fullName: empFullName.trim(),
+        email: emailCheck,
+        password: empPassword.trim() ? empPassword.trim() : editingEmployee.password,
+        role: empRole,
+        permissions: {
+          canViewCandidates: empCanViewCandidates,
+          canDeleteCandidates: empCanDeleteCandidates,
+          canExportExcel: empCanExportExcel,
+          canManageStaff: empCanManageStaff,
         }
-        return emp;
-      });
-    } else {
-      const newEmp: Employee = {
+      } : {
         id: "emp-" + Date.now(),
         fullName: empFullName.trim(),
         email: emailCheck,
@@ -244,34 +229,32 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
         },
         createdAt: new Date().toISOString()
       };
-      updatedEmployees = [newEmp, ...employees];
-    }
 
-    setEmployees(updatedEmployees);
-    localStorage.setItem("thinhgia_employees", JSON.stringify(updatedEmployees));
-    setShowEmployeeModal(false);
-    resetEmployeeForm();
+      await setDoc(doc(db, "employees", employeeDoc.id), employeeDoc);
+      setShowEmployeeModal(false);
+      resetEmployeeForm();
+    } catch (fErr) {
+      console.error("Firestore employee save failed, invoking handler:", fErr);
+      handleFirestoreError(fErr, OperationType.WRITE, `employees/${editingEmployee?.id || "new"}`);
+    }
   };
 
-  // Load from local storage and filter out any remaining mock seed candidates
+  // Load candidates in real-time from Firestore database
   useEffect(() => {
-    const rawData = localStorage.getItem("thinhgia_candidates");
-    if (rawData) {
-      try {
-        const parsed = JSON.parse(rawData) as Candidate[];
-        // Filter out any candidates with ids starting with "cand-" to clean up previous mock users
-        const cleaned = parsed.filter(c => !c.id.startsWith("cand-"));
-        setCandidates(cleaned);
-        localStorage.setItem("thinhgia_candidates", JSON.stringify(cleaned));
-      } catch (e) {
-        console.error("Lỗi parse dữ liệu ứng viên:", e);
-        setCandidates([]);
-        localStorage.setItem("thinhgia_candidates", JSON.stringify([]));
-      }
-    } else {
-      setCandidates([]);
-      localStorage.setItem("thinhgia_candidates", JSON.stringify([]));
-    }
+    const unsubscribe = onSnapshot(collection(db, "candidates"), (snapshot) => {
+      const list: Candidate[] = [];
+      snapshot.forEach((doc) => {
+        list.push(doc.data() as Candidate);
+      });
+      // Sort candidates: newest first
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setCandidates(list);
+    }, (err) => {
+      console.error("Firestore onSnapshot error on candidates collection:", err);
+      handleFirestoreError(err, OperationType.LIST, "candidates");
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Filter candidates
@@ -306,14 +289,17 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   }, {} as Record<string, number>);
 
   // Delete handler
-  const handleDelete = (id: string) => {
-    const updated = candidates.filter(c => c.id !== id);
-    setCandidates(updated);
-    localStorage.setItem("thinhgia_candidates", JSON.stringify(updated));
-    if (selectedCandidate?.id === id) {
-      setSelectedCandidate(null);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "candidates", id));
+      if (selectedCandidate?.id === id) {
+        setSelectedCandidate(null);
+      }
+      setShowDeleteConfirmId(null);
+    } catch (fErr) {
+      console.error("Firestore candidate delete failed, invoking handler:", fErr);
+      handleFirestoreError(fErr, OperationType.DELETE, `candidates/${id}`);
     }
-    setShowDeleteConfirmId(null);
   };
 
   const handleLogout = () => {
