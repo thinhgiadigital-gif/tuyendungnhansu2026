@@ -561,7 +561,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
               >
                 <div className="relative">
                   <img 
-                    src="https://scontent.fsgn5-7.fna.fbcdn.net/v/t39.30808-6/497840048_1209600227619587_8711491990197306037_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=127cfc&_nc_ohc=5VSM5nwpYp0Q7kNvwEkLhDB&_nc_oc=Adof6ymwKi0wxYF08Jx4cliWmg9VmEmcH7fpKyKl10vGpy5KpbaarXU75dUq5PXWRSg&_nc_zt=23&_nc_ht=scontent.fsgn5-7.fna&_nc_gid=rwh1bMO7MFsWYVEuxX9C1Q&_nc_ss=7b2a8&oh=00_Af5YxRwIAB6b37eNURNiAelv9dkWHM0Bo8xLro0wTd6EnQ&oe=6A12D1C1" 
+                    src="https://scontent.fsgn5-22.fna.fbcdn.net/v/t39.30808-6/669736914_1476839184229022_4401728016926114822_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=f727a1&_nc_ohc=lZvq2gKfsMIQ7kNvwFBgD5y&_nc_oc=AdoSfAAd3coCMKG6nNrygbTqDkdDlsN_-K8CfGJpT-lYJt4b0Pz368yAovdk5SGREFM&_nc_zt=23&_nc_ht=scontent.fsgn5-22.fna&_nc_gid=HAFerrCEQ7iJBo4SYvAmig&_nc_ss=7b2a8&oh=00_Af7A26OVpN4zM7_Nkb2n4fYTsGtL5D9HLEcCJ1OneAha8w&oe=6A141D35" 
                     alt="Workplace" 
                     className="rounded-[2rem] shadow-2xl w-full object-cover aspect-[4/3]"
                     referrerPolicy="no-referrer"

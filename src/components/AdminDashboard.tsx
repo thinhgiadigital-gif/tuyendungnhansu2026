@@ -104,49 +104,25 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     }
   }, [currentAdminEmail, isSuperAdmin, employees]);
 
-  // Load and seed initial staff accounts
+  // Load and filter initial staff accounts - removing simulated seeded template employees
   useEffect(() => {
     const rawEmployees = localStorage.getItem("thinhgia_employees");
+    let initialList: Employee[] = [];
     if (rawEmployees) {
       try {
-        setEmployees(JSON.parse(rawEmployees));
+        const parsed = JSON.parse(rawEmployees) as Employee[];
+        // Keep only operational staff registered or created through the interface
+        initialList = parsed.filter(emp => emp.id !== "emp-1" && emp.id !== "emp-2");
+        if (parsed.length !== initialList.length) {
+          localStorage.setItem("thinhgia_employees", JSON.stringify(initialList));
+        }
       } catch (err) {
         console.error("Lỗi parse danh sách nhân viên:", err);
       }
     } else {
-      const SEED_EMPLOYEES: Employee[] = [
-        {
-          id: "emp-1",
-          fullName: "Phan Thanh Hà",
-          email: "quanly@thinhgialand.com",
-          password: "password123",
-          role: "staff", // Quản lý tuyển dụng
-          permissions: {
-            canViewCandidates: true,
-            canDeleteCandidates: false,
-            canExportExcel: true,
-            canManageStaff: true, // "tạo tài khoản đăng nhập"
-          },
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: "emp-2",
-          fullName: "Nguyễn Văn Hùng",
-          email: "phuta@thinhgialand.com",
-          password: "view123",
-          role: "view_only", // Phụ tá
-          permissions: {
-            canViewCandidates: true,
-            canDeleteCandidates: false,
-            canExportExcel: false,
-            canManageStaff: false,
-          },
-          createdAt: new Date().toISOString()
-        }
-      ];
-      setEmployees(SEED_EMPLOYEES);
-      localStorage.setItem("thinhgia_employees", JSON.stringify(SEED_EMPLOYEES));
+      localStorage.setItem("thinhgia_employees", JSON.stringify([]));
     }
+    setEmployees(initialList);
   }, []);
 
   const handleRoleChange = (role: "admin" | "view_only" | "staff") => {
