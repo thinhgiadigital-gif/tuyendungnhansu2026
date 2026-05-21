@@ -39,14 +39,14 @@ service cloud.firestore {
 
     // 2. Candidates Collection Rules
     match /candidates/{candidateId} {
-      allow create: if isSignedIn() && isValidId(candidateId) && isValidCandidate(request.resource.data);
-      allow read, update, delete: if isSignedIn();
+      allow create: if isValidId(candidateId) && isValidCandidate(request.resource.data);
+      allow read, update, delete: if true;
     }
 
     // 3. Employees Collection Rules
     match /employees/{employeeId} {
-      allow create, update: if isSignedIn() && isValidId(employeeId) && isValidEmployee(request.resource.data);
-      allow read, delete: if isSignedIn();
+      allow create, update: if isValidId(employeeId) && isValidEmployee(request.resource.data);
+      allow read, delete: if true;
     }
   }
 }

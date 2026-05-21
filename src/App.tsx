@@ -191,6 +191,35 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Auto-seed requested employee Minh Thư if not already present in the database
+  useEffect(() => {
+    const seedEmployee = async () => {
+      try {
+        await ensureAuth();
+        const minhThuId = "emp-minhthu";
+        const empDoc = {
+          id: minhThuId,
+          fullName: "Minh Thư",
+          email: "buivominhthu388@gmail.com",
+          password: "0374369972",
+          role: "staff" as const,
+          permissions: {
+            canViewCandidates: true,
+            canDeleteCandidates: false,
+            canExportExcel: true,
+            canManageStaff: true,
+          },
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(doc(db, "employees", minhThuId), empDoc);
+        console.log("Successfully seeded Minh Thư employee account");
+      } catch (err) {
+        console.error("Failed to seed Minh Thư employee account:", err);
+      }
+    };
+    seedEmployee();
+  }, []);
+
   const handleApplyForBranch = (branchName: string) => {
     setSelectedBranch(branchName);
     const element = document.getElementById("apply");

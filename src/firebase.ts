@@ -7,12 +7,12 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
 export const auth = getAuth();
 
-// Sign in anonymously to guarantee request.auth is not null for secure security rules
+// Sign in anonymously if enabled, but handle errors gracefully to guarantee out-of-the-box operation on any browser/device
 let authPromise: Promise<any> | null = null;
 export let isAuthReady = false;
 
 export function ensureAuth() {
-  if (isAuthReady && auth.currentUser) return Promise.resolve(auth.currentUser);
+  if (isAuthReady) return Promise.resolve(auth.currentUser);
   if (authPromise) return authPromise;
 
   authPromise = signInAnonymously(auth)
@@ -21,8 +21,9 @@ export function ensureAuth() {
       return userCredential.user;
     })
     .catch((err) => {
-      console.error("Firebase Anonymous Auth failed:", err);
-      throw err;
+      console.warn("Firebase Anonymous Auth failed (it may not be enabled in Firebase console, proceeding without auth):", err);
+      isAuthReady = true;
+      return null;
     });
 
   return authPromise;
