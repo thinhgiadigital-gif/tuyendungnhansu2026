@@ -406,7 +406,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
               className="px-4 py-2 bg-brand-brown/5 hover:bg-brand-yellow/10 border border-brand-brown/10 text-brand-brown rounded-full font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <ShieldCheck size={14} className="text-brand-yellow" />
-              Quản trị ứng viên
+              Đăng nhập
             </button>
             <a 
               href="#apply" 
@@ -452,7 +452,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
                 className="w-[80%] py-3 hover:bg-brand-yellow/10 border border-brand-brown/10 text-brand-brown rounded-full font-bold text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
               >
                 <ShieldCheck size={16} className="text-brand-yellow" />
-                Quản trị ứng viên
+                Đăng nhập
               </button>
               <a 
                 href="#apply" 
