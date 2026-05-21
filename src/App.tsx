@@ -191,13 +191,15 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Auto-seed requested employee Minh Thư if not already present in the database
+  // Auto-seed requested employee accounts if not already present in the database
   useEffect(() => {
-    const seedEmployee = async () => {
+    const seedEmployees = async () => {
       try {
         await ensureAuth();
+        
+        // 1. Seed Minh Thư (Quản lý tuyển dụng)
         const minhThuId = "emp-minhthu";
-        const empDoc = {
+        const empMinhThu = {
           id: minhThuId,
           fullName: "Minh Thư",
           email: "buivominhthu388@gmail.com",
@@ -211,13 +213,52 @@ export default function App() {
           },
           createdAt: new Date().toISOString()
         };
-        await setDoc(doc(db, "employees", minhThuId), empDoc);
+        await setDoc(doc(db, "employees", minhThuId), empMinhThu);
         console.log("Successfully seeded Minh Thư employee account");
+
+        // 2. Seed Kế toán (Vũng Tàu)
+        const keToanId = "emp-ketoan-vungtau";
+        const empKeToan = {
+          id: keToanId,
+          fullName: "Kế toán Vũng Tàu",
+          email: "thinhgialand.vungtau@gmail.com",
+          password: "thinhgialand.vungtau@gmail.com",
+          role: "staff" as const,
+          permissions: {
+            canViewCandidates: true,
+            canDeleteCandidates: false,
+            canExportExcel: true,
+            canManageStaff: false,
+          },
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(doc(db, "employees", keToanId), empKeToan);
+        console.log("Successfully seeded Kế toán Vũng Tàu employee account");
+
+        // 3. Seed Hà Văn Quân
+        const haQuanId = "emp-havanquan";
+        const empHaQuan = {
+          id: haQuanId,
+          fullName: "Hà Văn Quân",
+          email: "haquan1410@gmail.com",
+          password: "haquan1410@gmail.com",
+          role: "staff" as const,
+          permissions: {
+            canViewCandidates: true,
+            canDeleteCandidates: false,
+            canExportExcel: true,
+            canManageStaff: false,
+          },
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(doc(db, "employees", haQuanId), empHaQuan);
+        console.log("Successfully seeded Hà Văn Quân employee account");
+
       } catch (err) {
-        console.error("Failed to seed Minh Thư employee account:", err);
+        console.error("Failed to seed employee accounts:", err);
       }
     };
-    seedEmployee();
+    seedEmployees();
   }, []);
 
   const handleApplyForBranch = (branchName: string) => {
