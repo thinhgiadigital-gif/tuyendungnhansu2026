@@ -4,7 +4,9 @@ import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
+export const db = (firebaseConfig as any).firestoreDatabaseId 
+  ? getFirestore(app, (firebaseConfig as any).firestoreDatabaseId)
+  : getFirestore(app); /* CRITICAL: Connect properly to standard or custom databases */
 export const auth = getAuth();
 
 // Sign in anonymously if enabled, but handle errors gracefully to guarantee out-of-the-box operation on any browser/device

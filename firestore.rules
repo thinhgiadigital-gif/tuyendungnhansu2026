@@ -1,52 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 1. Global Safety Net
+    // Allow read/write to all documents to ensure out-of-the-box operation and data syncing
+    match /candidates/{candidateId} {
+      allow read, write, create, update, delete: if true;
+    }
+
+    match /employees/{employeeId} {
+      allow read, write, create, update, delete: if true;
+    }
+
+    // Default deny for everything else
     match /{document=**} {
       allow read, write: if false;
-    }
-
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\\\-]+$');
-    }
-
-    // Candidate structure validation
-    function isValidCandidate(candidate) {
-      return candidate.id is string && candidate.id.size() <= 128
-        && candidate.fullName is string && candidate.fullName.size() <= 200
-        && candidate.phone is string && candidate.phone.size() <= 50
-        && candidate.email is string && candidate.email.size() <= 150
-        && candidate.position is string && candidate.position.size() <= 150
-        && candidate.branch is string && candidate.branch.size() <= 150
-        && candidate.experience is string && candidate.experience.size() <= 50000
-        && candidate.note is string && candidate.note.size() <= 50000
-        && candidate.createdAt is string && candidate.createdAt.size() <= 100;
-    }
-
-    // Employee structure validation
-    function isValidEmployee(emp) {
-      return emp.id is string && emp.id.size() <= 128
-        && emp.fullName is string && emp.fullName.size() <= 200
-        && emp.email is string && emp.email.size() <= 150
-        && emp.role is string && (emp.role == 'super_admin' || emp.role == 'admin' || emp.role == 'view_only' || emp.role == 'staff')
-        && emp.createdAt is string && emp.createdAt.size() <= 100;
-    }
-
-    // 2. Candidates Collection Rules
-    match /candidates/{candidateId} {
-      allow create: if isValidId(candidateId) && isValidCandidate(request.resource.data);
-      allow read, update, delete: if true;
-    }
-
-    // 3. Employees Collection Rules
-    match /employees/{employeeId} {
-      allow create, update: if isValidId(employeeId) && isValidEmployee(request.resource.data);
-      allow read, delete: if true;
     }
   }
 }

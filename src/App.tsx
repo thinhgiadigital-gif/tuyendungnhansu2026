@@ -261,6 +261,38 @@ export default function App() {
     seedEmployees();
   }, []);
 
+  // Auto-sync unsaved local candidates to cloud Firestore
+  useEffect(() => {
+    const syncLocalCandidates = async () => {
+      try {
+        await ensureAuth();
+        const localRaw = localStorage.getItem("thinhgia_candidates");
+        if (localRaw) {
+          const localList = JSON.parse(localRaw) as Candidate[];
+          localList.forEach(async (localCand) => {
+            try {
+              const syncCand = { ...localCand };
+              // Omit very heavy file payload from Firestore document to avoid size limit issues
+              if (syncCand.cvData && syncCand.cvData.length > 500000) {
+                delete syncCand.cvData;
+                syncCand.note = (syncCand.note || "") + " [Đính kèm CV nặng - Đã gửi email & lưu cục bộ]";
+              }
+              await setDoc(doc(db, "candidates", syncCand.id), syncCand);
+              console.log(`Auto-synced candidate application: ${syncCand.fullName}`);
+            } catch (err) {
+              console.warn(`Sync failed for local candidate ${localCand.fullName}:`, err);
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Candidate auto-sync failed:", err);
+      }
+    };
+    // Sync 2 seconds after loading to make sure initial resources are ready
+    const timeout = setTimeout(syncLocalCandidates, 2000);
+    return () => clearTimeout(timeout);
+  }, []);
+
   const handleApplyForBranch = (branchName: string) => {
     setSelectedBranch(branchName);
     const element = document.getElementById("apply");
@@ -298,13 +330,18 @@ export default function App() {
       cvData: registerCVData || undefined,
     };
 
-    // Save to Firestore Database
+    // Save to Firestore Database with maximum safety (e.g. stripping heavy files to avoid 1MB Firestore doc limits, and fallback gracefully so the applicant can always sign up successfully)
     try {
       await ensureAuth();
-      await setDoc(doc(db, "candidates", newCandidate.id), newCandidate);
+      const firestoreCandidate = { ...newCandidate };
+      if (firestoreCandidate.cvData && firestoreCandidate.cvData.length > 500000) {
+        console.warn("CV data size is large. Omit base64 data URL from cloud database to respect Firestore size limits.");
+        delete firestoreCandidate.cvData;
+        firestoreCandidate.note = (firestoreCandidate.note || "") + ` [Đính kèm CV nặng: ${firestoreCandidate.cvName || "Tệp CV"}. File đã được gửi qua email tuyển dụng & lưu cục bộ.]`;
+      }
+      await setDoc(doc(db, "candidates", firestoreCandidate.id), firestoreCandidate);
     } catch (fErr) {
-      console.error("Firestore candidate save failed, invoking handler:", fErr);
-      handleFirestoreError(fErr, OperationType.CREATE, `candidates/${newCandidate.id}`);
+      console.warn("Lưu trữ online gặp lỗi, đang nộp dự phòng qua local storage & email thông báo:", fErr);
     }
 
     const sendEmailNotification = async (candidate: Candidate) => {

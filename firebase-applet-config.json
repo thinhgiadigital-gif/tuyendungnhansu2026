@@ -1,10 +1,8 @@
 {
-  "projectId": "ornate-retina-kcf5x",
-  "appId": "1:961434833387:web:334f9a0d9874d0388949ae",
-  "apiKey": "AIzaSyAUyA_m8TtbQNndDYsz-vm-ymApZOSAce8",
-  "authDomain": "ornate-retina-kcf5x.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-197e84ca-12ad-40da-81f4-6e23b9b38f09",
-  "storageBucket": "ornate-retina-kcf5x.firebasestorage.app",
-  "messagingSenderId": "961434833387",
-  "measurementId": ""
+  "projectId": "tuyendungtgl",
+  "appId": "1:893749760247:web:42a150b05f969e712b43f2",
+  "apiKey": "AIzaSyAALSCN821YnQWlwgj3u9CDY6ZbCsb7lU0",
+  "authDomain": "tuyendungtgl.firebaseapp.com",
+  "storageBucket": "tuyendungtgl.firebasestorage.app",
+  "messagingSenderId": "893749760247"
 }
