@@ -239,9 +239,9 @@ export default function App() {
         const haQuanId = "emp-havanquan";
         const empHaQuan = {
           id: haQuanId,
-          fullName: "Hà Văn Quân",
-          email: "haquan1410@gmail.com",
-          password: "haquan1410@gmail.com",
+          fullName: "Nam Sân Bay",
+          email: "namsanbay72@gmail.com",
+          password: "namsanbay72",
           role: "staff" as const,
           permissions: {
             canViewCandidates: true,
@@ -252,7 +252,26 @@ export default function App() {
           createdAt: new Date().toISOString()
         };
         await setDoc(doc(db, "employees", haQuanId), empHaQuan);
-        console.log("Successfully seeded Hà Văn Quân employee account");
+        console.log("Successfully seeded Nam Sân Bay employee account");
+
+        // 4. Seed Quản lý tuyển dụng (Bắc San Bay)
+        const bacSanBayId = "emp-bacsanbay";
+        const empBacSanBay = {
+          id: bacSanBayId,
+          fullName: "Bắc Săn Bay",
+          email: "bacsanbay72@gmail.com",
+          password: "bacsanbay72",
+          role: "staff" as const,
+          permissions: {
+            canViewCandidates: true,
+            canDeleteCandidates: false,
+            canExportExcel: true,
+            canManageStaff: true,
+          },
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(doc(db, "employees", bacSanBayId), empBacSanBay);
+        console.log("Successfully seeded bacsanbay72 employee account");
 
       } catch (err) {
         console.error("Failed to seed employee accounts:", err);
