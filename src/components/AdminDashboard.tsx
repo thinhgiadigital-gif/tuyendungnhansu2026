@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { Candidate, Employee } from "../types";
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
-import { db, OperationType, handleFirestoreError, ensureAuth } from "../firebase";
+import { db, OperationType, handleFirestoreError, ensureAuth, auth } from "../firebase";
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -63,7 +63,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [showEmpDeleteConfirmId, setShowEmpDeleteConfirmId] = useState<string | null>(null);
   const [employeeError, setEmployeeError] = useState("");
 
-  const currentAdminEmail = localStorage.getItem("thinhgia_admin_email") || "thinhgiadigital@gmail.com";
+  const currentAdminEmail = auth.currentUser?.email || "";
   const isSuperAdmin = currentAdminEmail.toLowerCase().trim() === "thinhgiadigital@gmail.com";
 
   const [currentPermissions, setCurrentPermissions] = useState({
@@ -183,11 +183,6 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       return;
     }
 
-    if (!editingEmployee && !empPassword.trim()) {
-      setEmployeeError("Vui lòng thiết lập mật khẩu cho tài khoản viên mới.");
-      return;
-    }
-
     const emailCheck = empEmail.trim().toLowerCase();
     if (emailCheck === "thinhgiadigital@gmail.com") {
       setEmployeeError("Không thể tạo hoặc trùng email tài khoản chủ sở hữu.");
@@ -209,7 +204,6 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
         ...editingEmployee,
         fullName: empFullName.trim(),
         email: emailCheck,
-        password: empPassword.trim() ? empPassword.trim() : editingEmployee.password,
         role: empRole,
         permissions: {
           canViewCandidates: empCanViewCandidates,
@@ -221,7 +215,6 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
         id: "emp-" + Date.now(),
         fullName: empFullName.trim(),
         email: emailCheck,
-        password: empPassword.trim(),
         role: empRole,
         permissions: {
           canViewCandidates: empCanViewCandidates,
@@ -305,9 +298,14 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("thinhgia_admin_authenticated");
-    localStorage.removeItem("thinhgia_admin_session_time");
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      // Re-initialize an anonymous session to keep standard submissions functional
+      await ensureAuth();
+    } catch (err) {
+      console.error("Error signing out with Firebase Auth:", err);
+    }
     onBack();
   };
 
@@ -753,7 +751,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                       <thead>
                         <tr className="bg-brand-gray/15 text-[#a88d6c] font-black uppercase tracking-wider border-b border-brand-brown/5">
                           <th className="px-6 py-4">Nhân viên</th>
-                          <th className="px-6 py-4">Tài khoản & Mật khẩu</th>
+                          <th className="px-6 py-4">Tài khoản (Email)</th>
                           <th className="px-6 py-4">Mức Phân Quyền</th>
                           <th className="px-6 py-4 text-right">Thao tác</th>
                         </tr>
@@ -769,8 +767,8 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                               <p className="font-bold text-brand-brown-light flex items-center gap-1">
                                 <Mail size={12} className="text-[#a88d6c]" /> {emp.email}
                               </p>
-                              <p className="text-[10px] text-brand-brown/40 mt-1 font-mono flex items-center gap-1">
-                                <Key size={10} className="text-brand-brown/30" /> MK: <strong className="bg-[#faf4ec] px-1 border border-brand-brown/5 text-xs text-brand-brown rounded">{emp.password || "••••••"}</strong>
+                              <p className="text-[10px] text-[#22c55e] mt-1 font-extrabold flex items-center gap-1">
+                                <Shield size={10} /> Quản lý bởi Firebase Auth
                               </p>
                             </td>
                             <td className="px-6 py-4">
@@ -1090,20 +1088,14 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                 />
               </div>
 
-              <div className="space-y-1.5 flex flex-col">
-                <div className="flex justify-between items-center px-1">
-                  <label className="text-[10px] font-black uppercase text-brand-brown-light tracking-widest">
-                    Mật khẩu {editingEmployee ? "(Để trống nếu giữ nguyên)" : "đăng nhập"}
-                  </label>
-                </div>
-                <input
-                  type="text"
-                  required={!editingEmployee}
-                  value={empPassword}
-                  onChange={(e) => setEmpPassword(e.target.value)}
-                  placeholder={editingEmployee ? "Nhập mật khẩu mới..." : "Vd: thinhgia2026"}
-                  className="w-full px-4 py-3 bg-white border border-brand-brown/10 focus:border-brand-yellow text-sm font-mono rounded-2xl outline-none"
-                />
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-xs space-y-1.5 text-brand-brown">
+                <span className="font-extrabold text-amber-800 uppercase text-[10px] tracking-wider block">⚠️ Thiết lập Tài khoản đăng nhập</span>
+                <p className="leading-relaxed">
+                  Vì lý do bảo mật, tài khoản và mật khẩu của nhân sự được tạo và phân bổ trực tiếp thông qua trang quản trị <strong>Firebase Authentication</strong>. 
+                </p>
+                <p className="font-semibold text-brand-brown-light text-[11px]">
+                  * Điền Email của nhân sự ở trên khớp với Email bạn đã tạo thủ công trong Firebase Authentication để đồng bộ phân quyền.
+                </p>
               </div>
 
               <div className="space-y-1.5 flex flex-col">

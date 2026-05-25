@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { ShieldAlert, X, Eye, EyeOff, Mail, Lock, ArrowRight, CornerDownRight } from "lucide-react";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db, ensureAuth } from "../firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
 
 interface AdminLoginProps {
   isOpen: boolean;
@@ -30,64 +30,28 @@ export default function AdminLogin({ isOpen, onClose, onSuccess }: AdminLoginPro
 
     setLoading(true);
 
-    // Normalize comparison: remove spaces and convert to lowercase for usernames, 
-    // allow password with spaces (exactly as requested "0931 522 686") or without spaces
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
     try {
-      // 1. Check Super Admin with hardcoded secret
-      const isSuperEmail = cleanEmail === "thinhgiadigital@gmail.com";
-      const isSuperPass = 
-        cleanPassword === "0931 522 686" || 
-        cleanPassword === "0931522686";
-
-      if (isSuperEmail && isSuperPass) {
-        localStorage.setItem("thinhgia_admin_authenticated", "true");
-        localStorage.setItem("thinhgia_admin_email", "thinhgiadigital@gmail.com");
-        localStorage.setItem("thinhgia_admin_session_time", Date.now().toString());
-        setLoading(false);
-        onSuccess();
-        return;
-      }
-
-      // Ensure anonymous auth session is ready for firestore rules before querying
-      await ensureAuth();
-
-      // 2. Check Custom Employees in Cloud Firestore
-      const q = query(collection(db, "employees"), where("email", "==", cleanEmail));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        const foundDoc = querySnapshot.docs[0];
-        const foundEmp = foundDoc.data() as any;
-        const expectedPass = foundEmp.password || "123456"; // default fallback
-
-        if (cleanPassword === expectedPass) {
-          localStorage.setItem("thinhgia_admin_authenticated", "true");
-          localStorage.setItem("thinhgia_admin_email", foundEmp.email);
-          localStorage.setItem("thinhgia_admin_session_time", Date.now().toString());
-          setLoading(false);
-          onSuccess();
-          return;
-        } else {
-          setError("Mật khẩu của tài khoản nhân sự không chính xác!");
-          setLoading(false);
-          return;
-        }
-      }
-
-      // If we got here, it's a failure
+      // Sign in securely using Firebase Authentication as the single source of truth
+      await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
       setLoading(false);
-      if (isSuperEmail) {
-        setError("Mật khẩu bảo mật cho tài khoản quản trị tổng không chính xác.");
+      onSuccess();
+    } catch (err: any) {
+      console.error("Lỗi xác minh tài khoản nhân sự:", err);
+      setLoading(false);
+      
+      // Provide a friendly error translation
+      if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+        setError("Tên đăng nhập (Email) hoặc Mật khẩu không chính xác.");
+      } else if (err.code === "auth/invalid-email") {
+        setError("Định dạng email đăng nhập không phù hợp.");
+      } else if (err.code === "auth/too-many-requests") {
+        setError("Tài khoản bị tạm khóa do nhập sai nhiều lần. Vui lòng thử lại sau!");
       } else {
         setError("Tài khoản chưa được phân quyền hoặc mật khẩu không chính xác.");
       }
-    } catch (err) {
-      console.error("Lỗi xác minh tài khoản nhân sự:", err);
-      setLoading(false);
-      setError("Đã xảy ra lỗi hệ thống khi kết nối cơ sở dữ liệu. Vui lòng thử lại!");
     }
   };
 

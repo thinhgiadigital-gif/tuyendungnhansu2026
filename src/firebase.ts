@@ -14,19 +14,34 @@ let authPromise: Promise<any> | null = null;
 export let isAuthReady = false;
 
 export function ensureAuth() {
-  if (isAuthReady) return Promise.resolve(auth.currentUser);
+  if (auth.currentUser) {
+    isAuthReady = true;
+    return Promise.resolve(auth.currentUser);
+  }
   if (authPromise) return authPromise;
 
-  authPromise = signInAnonymously(auth)
-    .then((userCredential) => {
-      isAuthReady = true;
-      return userCredential.user;
-    })
-    .catch((err) => {
-      console.warn("Firebase Anonymous Auth failed (it may not be enabled in Firebase console, proceeding without auth):", err);
-      isAuthReady = true;
-      return null;
+  authPromise = new Promise((resolve) => {
+    // Listen to first state change to detect restored persistent session
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      unsubscribe();
+      if (user) {
+        isAuthReady = true;
+        resolve(user);
+      } else {
+        // No session found, sign in anonymously for candidate submission
+        signInAnonymously(auth)
+          .then((userCredential) => {
+            isAuthReady = true;
+            resolve(userCredential.user);
+          })
+          .catch((err) => {
+            console.warn("Firebase Anonymous Auth failed:", err);
+            isAuthReady = true;
+            resolve(null);
+          });
+      }
     });
+  });
 
   return authPromise;
 }

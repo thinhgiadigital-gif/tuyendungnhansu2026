@@ -27,8 +27,8 @@ import React, { useState, useEffect } from "react";
 import { Candidate } from "./types";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminLogin from "./components/AdminLogin";
-import { doc, setDoc } from "firebase/firestore";
-import { db, OperationType, handleFirestoreError, ensureAuth } from "./firebase";
+import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { db, OperationType, handleFirestoreError, ensureAuth, auth } from "./firebase";
 
 const NAV_LINKS = [
   { name: "Giới thiệu", href: "#about" },
@@ -131,10 +131,24 @@ export default function App() {
   const [selectedBranch, setSelectedBranch] = useState("VP Võ Thị Sáu (CS1)");
   const [isAdminView, setIsAdminView] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+  const [currentAdmin, setCurrentAdmin] = useState<any>(null);
+
+  useEffect(() => {
+    // Listen to Firebase Auth state changes as the sole source of authentication
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user && !user.isAnonymous) {
+        setCurrentAdmin(user);
+        setIsAdminView(true);
+      } else {
+        setCurrentAdmin(null);
+        setIsAdminView(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleAdminTrigger = () => {
-    const isAuthenticated = localStorage.getItem("thinhgia_admin_authenticated") === "true";
-    if (isAuthenticated) {
+    if (currentAdmin) {
       setIsAdminView(true);
     } else {
       setIsAdminLoginOpen(true);
@@ -191,94 +205,6 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Auto-seed requested employee accounts if not already present in the database
-  useEffect(() => {
-    const seedEmployees = async () => {
-      try {
-        await ensureAuth();
-        
-        // 1. Seed Minh Thư (Quản lý tuyển dụng)
-        const minhThuId = "emp-minhthu";
-        const empMinhThu = {
-          id: minhThuId,
-          fullName: "Minh Thư",
-          email: "buivominhthu388@gmail.com",
-          password: "0374369972",
-          role: "staff" as const,
-          permissions: {
-            canViewCandidates: true,
-            canDeleteCandidates: false,
-            canExportExcel: true,
-            canManageStaff: true,
-          },
-          createdAt: new Date().toISOString()
-        };
-        await setDoc(doc(db, "employees", minhThuId), empMinhThu);
-        console.log("Successfully seeded Minh Thư employee account");
-
-        // 2. Seed Kế toán (Vũng Tàu)
-        const keToanId = "emp-ketoan-vungtau";
-        const empKeToan = {
-          id: keToanId,
-          fullName: "Kế toán Vũng Tàu",
-          email: "thinhgialand.vungtau@gmail.com",
-          password: "thinhgialand.vungtau@gmail.com",
-          role: "staff" as const,
-          permissions: {
-            canViewCandidates: true,
-            canDeleteCandidates: false,
-            canExportExcel: true,
-            canManageStaff: false,
-          },
-          createdAt: new Date().toISOString()
-        };
-        await setDoc(doc(db, "employees", keToanId), empKeToan);
-        console.log("Successfully seeded Kế toán Vũng Tàu employee account");
-
-        // 3. Seed Hà Văn Quân
-        const haQuanId = "emp-havanquan";
-        const empHaQuan = {
-          id: haQuanId,
-          fullName: "Nam Sân Bay",
-          email: "namsanbay72@gmail.com",
-          password: "namsanbay72",
-          role: "staff" as const,
-          permissions: {
-            canViewCandidates: true,
-            canDeleteCandidates: false,
-            canExportExcel: true,
-            canManageStaff: false,
-          },
-          createdAt: new Date().toISOString()
-        };
-        await setDoc(doc(db, "employees", haQuanId), empHaQuan);
-        console.log("Successfully seeded Nam Sân Bay employee account");
-
-        // 4. Seed Quản lý tuyển dụng (Bắc San Bay)
-        const bacSanBayId = "emp-bacsanbay";
-        const empBacSanBay = {
-          id: bacSanBayId,
-          fullName: "Bắc Săn Bay",
-          email: "bacsanbay72@gmail.com",
-          password: "bacsanbay72",
-          role: "staff" as const,
-          permissions: {
-            canViewCandidates: true,
-            canDeleteCandidates: false,
-            canExportExcel: true,
-            canManageStaff: true,
-          },
-          createdAt: new Date().toISOString()
-        };
-        await setDoc(doc(db, "employees", bacSanBayId), empBacSanBay);
-        console.log("Successfully seeded bacsanbay72 employee account");
-
-      } catch (err) {
-        console.error("Failed to seed employee accounts:", err);
-      }
-    };
-    seedEmployees();
-  }, []);
 
   // Auto-sync unsaved local candidates to cloud Firestore
   useEffect(() => {
