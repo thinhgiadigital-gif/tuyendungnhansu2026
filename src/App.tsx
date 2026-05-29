@@ -74,10 +74,10 @@ const BENEFITS = [
 ];
 
 const GALLERY = [
-  { url: "https://scontent.fsgn5-22.fna.fbcdn.net/v/t39.30808-6/678399446_1484612316785042_3151249471842930485_n.jpg?stp=cp6_dst-jpegr_tt6&_nc_cat=111&ccb=1-7&_nc_sid=f727a1&_nc_ohc=LB2RBT-BIagQ7kNvwEulBKX&_nc_oc=AdrKb7aufO3Wrq89csvazyyCq_Rl7nmnl3tUe9NZg5n1meIaZ4Whh_QNtgdBt44kniE&_nc_zt=23&se=-1&_nc_ht=scontent.fsgn5-22.fna&_nc_gid=VQgEjL1XVVgqN48UZpU4vw&_nc_ss=7b2a8&oh=00_Af6mWgxCLJSmtb7I4EItUwQdF_R4y4FvYJWiWnlBlsVeGA&oe=6A12C74D", title: "Chương trình đào tạo" },
-  { url: "https://scontent.fsgn5-22.fna.fbcdn.net/v/t39.30808-6/671722720_1476839260895681_8161864547425732695_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=f727a1&_nc_ohc=VoZFTUVgoB0Q7kNvwGQYCZ6&_nc_oc=AdpHm7znsNg5iPwtskqpIGhUEVy0lb1Btvxvt0nR-osrcFjgq30dSDds85ef4kEwJcg&_nc_zt=23&_nc_ht=scontent.fsgn5-22.fna&_nc_gid=t43gfS3m8PGvlo1qWcEiEw&_nc_ss=7b2a8&oh=00_Af62trA4N0-P9b8JCvhqAKz6p24A6FvABWDD-F14McqTFg&oe=6A12CB86", title: "Cá nhân xuất sắc" },
-  { url: "https://scontent.fsgn5-7.fna.fbcdn.net/v/t39.30808-6/646911151_1446750073904600_2956173902922822862_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=f727a1&_nc_ohc=igpLZ-jr1jcQ7kNvwHqlC5y&_nc_oc=AdqxXtAbBTdCMQdgCfOv__OvMBuAWheIiZxtisJAWdzFXUmNm55d0aMmEAAQY0Xf2MQ&_nc_zt=23&_nc_ht=scontent.fsgn5-7.fna&_nc_gid=6ebClIbNwWnz3kazE6P1oA&_nc_ss=7b2a8&oh=00_Af7vJRGh_otELTcL3kLM3N0q_WKVYrwHWEjds1PZVTiajw&oe=6A12D7D6", title: "Giải bóng đá Thịnh Gia" },
-  { url: "https://scontent.fsgn5-7.fna.fbcdn.net/v/t39.30808-6/642310604_1439733394606268_4252534441080025385_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=f727a1&_nc_ohc=xwr_HYmxxBoQ7kNvwGDpHEl&_nc_oc=AdqC_2-8Y_D_-9PRKTzmtsib-eXE4owhTMygmxku_9ILz636qlhgW3fXO-pqjoL8_ko&_nc_zt=23&_nc_ht=scontent.fsgn5-7.fna&_nc_gid=znRF1egYi5y1oLCN8uzqOQ&_nc_ss=7b2a8&oh=00_Af4sSF2TaQ1cdxAewlaT0hq9GbyHPDtBxEFbfRp6AGVNEQ&oe=6A12CEC9", title: "Đại gia đình Thịnh Gia" },
+  { url: "/src/assets/images/office_training_session_1780026289664.png", title: "Chương trình đào tạo" },
+  { url: "/src/assets/images/women_day_celebration_1780026238263.png", title: "Cá nhân xuất sắc" },
+  { url: "/src/assets/images/year_end_milestone_1780026320692.png", title: "Tổng kết năm" },
+  { url: "/src/assets/images/office_team_collaboration_1780026267119.png", title: "Đại gia đình Thịnh Gia" },
 ];
 
 const TIMELINE = [
@@ -624,7 +624,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
               >
                 <div className="relative">
                   <img 
-                    src="https://scontent.fsgn5-22.fna.fbcdn.net/v/t39.30808-6/669736914_1476839184229022_4401728016926114822_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=f727a1&_nc_ohc=lZvq2gKfsMIQ7kNvwFBgD5y&_nc_oc=AdoSfAAd3coCMKG6nNrygbTqDkdDlsN_-K8CfGJpT-lYJt4b0Pz368yAovdk5SGREFM&_nc_zt=23&_nc_ht=scontent.fsgn5-22.fna&_nc_gid=HAFerrCEQ7iJBo4SYvAmig&_nc_ss=7b2a8&oh=00_Af7A26OVpN4zM7_Nkb2n4fYTsGtL5D9HLEcCJ1OneAha8w&oe=6A141D35" 
+                    src="https://thinhgialand.com/wp-content/uploads/2026/01/dao-tao-cap-nhat-bang-gia-dat-vung-tau-20264.webp" 
                     alt="Workplace" 
                     className="rounded-[2rem] shadow-2xl w-full object-cover aspect-[4/3]"
                     referrerPolicy="no-referrer"
@@ -746,7 +746,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
                   className="relative overflow-hidden rounded-[2rem] shadow-premium bg-brand-gray border border-brand-brown/5"
                 >
                   <img 
-                    src="https://scontent.fsgn5-7.fna.fbcdn.net/v/t39.30808-6/497568252_1209560480956895_5641612137441909227_n.png?stp=dst-jpg_tt6&_nc_cat=105&ccb=1-7&_nc_sid=86c6b0&_nc_ohc=oUhPSWfauq8Q7kNvwGYw3NH&_nc_oc=Adrj7RHJvP3u4V0W2KhQqOB0qWYgb8Tmq2NNI8Sj5hMI0wC16kX7wksYm7LXgQ94jz4&_nc_zt=23&_nc_ht=scontent.fsgn5-7.fna&_nc_gid=bR_8B6x5Sdn0xrTGC9xU5A&_nc_ss=7b2a8&oh=00_Af5yB1y5aCk7R_F82Ak9GktZ737If6ErNIcjxv4EmGG5Wg&oe=6A12D5F0" 
+                    src="https://thinhgialand.com/wp-content/uploads/2026/04/DJI_20260413141251_0033_D.webp" 
                     alt="Đơn vị uy tín Thịnh Gia Land" 
                     className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
@@ -778,7 +778,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
                   onClick={() => handleApplyForBranch("VP Võ Thị Sáu (CS1)")}
                 >
                   <img 
-                    src="https://scontent.fsgn5-22.fna.fbcdn.net/v/t39.30808-6/669659805_1476839307562343_5673636165753880843_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=f727a1&_nc_ohc=rB0a1vWLZfkQ7kNvwG3nW8s&_nc_oc=AdpG2ipOQ00bI7DQL9t1CktPrCsndLXF8Z0vHfmNyRdIHa3IleYSufXa36MS9ftZjns&_nc_zt=23&_nc_ht=scontent.fsgn5-22.fna&_nc_gid=-g0DTc2eYHwc0iAqfLbfbw&_nc_ss=7b2a8&oh=00_Af68vh0oSwdV6Q1XNFnZzJdr4OtB5IoKTbUXt9743c0yOA&oe=6A12F35F" 
+                    src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80" 
                     alt="Văn phòng Võ Thị Sáu" 
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-115 transition-transform duration-1000"
                     referrerPolicy="no-referrer"
@@ -811,7 +811,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
                   onClick={() => handleApplyForBranch("VP Chí Linh (CS2)")}
                 >
                   <img 
-                    src="https://scontent.fsgn5-22.fna.fbcdn.net/v/t39.30808-6/539980104_1293066932606249_5994012548924105307_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=f727a1&_nc_ohc=NgDB1wkwAM4Q7kNvwH03tb1&_nc_oc=AdrqLmWJ8bmtd-Nbr7FZRKmp36JIL-2L_ZPADmKyORtEchCI8kKYpsHPyaQam018or4&_nc_zt=23&_nc_ht=scontent.fsgn5-22.fna&_nc_gid=jIdlluKE_XaC57wSDW3Dsw&_nc_ss=7b2a8&oh=00_Af44spfzTZUHIGqx3iqYwyskFkogQfg1cPO-itV21UV_yw&oe=6A12E908" 
+                    src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80" 
                     alt="Văn phòng Chí Linh" 
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-115 transition-transform duration-1000"
                     referrerPolicy="no-referrer"
@@ -895,7 +895,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
                 className="relative"
               >
                 <img 
-                  src="https://scontent.fsgn5-22.fna.fbcdn.net/v/t39.30808-6/492095019_1191271506119126_3333049563478576275_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_ohc=oU1ivMpkPcAQ7kNvwEpTOVx&_nc_oc=AdpdK7EPC2jlu4LuKYGEa2MUDMCVcr3CJvCV87UQYizjxh8fF0_nWpdQei_mSInXoKE&_nc_zt=23&_nc_ht=scontent.fsgn5-22.fna&_nc_gid=eqioHXVupkK9sxnU-4LrsQ&_nc_ss=7b2a8&oh=00_Af5caYN-ut4iC6BXrojsR499KSxt-E_J7a_o4sQ4rWJErQ&oe=6A12CCD0" 
+                  src="https://thinhgialand.com/wp-content/uploads/2026/01/TONG-KET-NAM-2025-21.webp" 
                   alt="Bonus & Rewards" 
                   className="rounded-[3rem] shadow-2xl relative z-10 w-full object-cover aspect-[4/3] md:aspect-auto"
                   referrerPolicy="no-referrer"
