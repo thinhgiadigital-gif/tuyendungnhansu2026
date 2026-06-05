@@ -163,6 +163,7 @@ export default function App() {
   const [registerNote, setRegisterNote] = useState("");
   const [registerCVName, setRegisterCVName] = useState("");
   const [registerCVData, setRegisterCVData] = useState("");
+  const [registerCVFile, setRegisterCVFile] = useState<File | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
@@ -206,6 +207,87 @@ export default function App() {
   }, []);
 
 
+  const compressImageIfNeeded = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve((event.target?.result as string) || "");
+        reader.onerror = () => resolve("");
+        reader.readAsDataURL(file);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_DIM = 1200;
+          let width = img.width;
+          let height = img.height;
+          if (width > MAX_DIM || height > MAX_DIM) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            } else {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL("image/jpeg", 0.65);
+            resolve(compressed);
+          } else {
+            resolve((event.target?.result as string) || "");
+          }
+        };
+        img.onerror = () => resolve((event.target?.result as string) || "");
+        img.src = (event.target?.result as string) || "";
+      };
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const saveCandidateToFirestore = async (cand: Candidate) => {
+    const syncCand = { ...cand };
+    const INLINE_CV_MAX_CHARS = 500000; // Khoảng 375KB dữ liệu CV thô
+
+    if (syncCand.cvData && syncCand.cvData.length > INLINE_CV_MAX_CHARS) {
+      const dataToChunk = syncCand.cvData;
+      delete syncCand.cvData;
+      syncCand.hasChunks = true;
+
+      // 1. Lưu hồ sơ ứng viên chính (không có cvData nặng trực tiếp)
+      await setDoc(doc(db, "candidates", syncCand.id), syncCand);
+
+      // 2. Chia nhỏ Base64 thành các phân đoạn 500KB
+      const chunks: string[] = [];
+      let idx = 0;
+      while (idx < dataToChunk.length) {
+        chunks.push(dataToChunk.substring(idx, idx + INLINE_CV_MAX_CHARS));
+        idx += INLINE_CV_MAX_CHARS;
+      }
+
+      // 3. Lưu từng mảnh vào subcollection cvChunks
+      const chunkPromises = chunks.map((chunkStr, i) => {
+        return setDoc(doc(db, "candidates", syncCand.id, "cvChunks", `chunk_${i}`), {
+          chunkData: chunkStr,
+          index: i,
+          createdAt: new Date().toISOString()
+        });
+      });
+      await Promise.all(chunkPromises);
+      console.log(`Đã phân tách và lưu CV thành ${chunks.length} phần trên Firestore cho ứng viên: ${syncCand.fullName}`);
+    } else {
+      // CV nhỏ hơn giới hạn, lưu thông thường trực tiếp trong tài liệu ứng viên
+      await setDoc(doc(db, "candidates", syncCand.id), syncCand);
+    }
+  };
+
   // Auto-sync unsaved local candidates to cloud Firestore
   useEffect(() => {
     const syncLocalCandidates = async () => {
@@ -214,20 +296,14 @@ export default function App() {
         const localRaw = localStorage.getItem("thinhgia_candidates");
         if (localRaw) {
           const localList = JSON.parse(localRaw) as Candidate[];
-          localList.forEach(async (localCand) => {
+          for (const localCand of localList) {
             try {
-              const syncCand = { ...localCand };
-              // Omit very heavy file payload from Firestore document to avoid size limit issues
-              if (syncCand.cvData && syncCand.cvData.length > 500000) {
-                delete syncCand.cvData;
-                syncCand.note = (syncCand.note || "") + " [Đính kèm CV nặng - Đã gửi email & lưu cục bộ]";
-              }
-              await setDoc(doc(db, "candidates", syncCand.id), syncCand);
-              console.log(`Auto-synced candidate application: ${syncCand.fullName}`);
+              await saveCandidateToFirestore(localCand);
+              console.log(`Auto-synced candidate application: ${localCand.fullName}`);
             } catch (err) {
               console.warn(`Sync failed for local candidate ${localCand.fullName}:`, err);
             }
-          });
+          }
         }
       } catch (err) {
         console.error("Candidate auto-sync failed:", err);
@@ -275,16 +351,10 @@ export default function App() {
       cvData: registerCVData || undefined,
     };
 
-    // Save to Firestore Database with maximum safety (e.g. stripping heavy files to avoid 1MB Firestore doc limits, and fallback gracefully so the applicant can always sign up successfully)
+    // Lưu trữ trực tiếp lên cơ sở dữ liệu Firestore đám đông bằng cơ chế chia nhỏ chunks tự động nếu tệp nặng
     try {
       await ensureAuth();
-      const firestoreCandidate = { ...newCandidate };
-      if (firestoreCandidate.cvData && firestoreCandidate.cvData.length > 500000) {
-        console.warn("CV data size is large. Omit base64 data URL from cloud database to respect Firestore size limits.");
-        delete firestoreCandidate.cvData;
-        firestoreCandidate.note = (firestoreCandidate.note || "") + ` [Đính kèm CV nặng: ${firestoreCandidate.cvName || "Tệp CV"}. File đã được gửi qua email tuyển dụng & lưu cục bộ.]`;
-      }
-      await setDoc(doc(db, "candidates", firestoreCandidate.id), firestoreCandidate);
+      await saveCandidateToFirestore(newCandidate);
     } catch (fErr) {
       console.warn("Lưu trữ online gặp lỗi, đang nộp dự phòng qua local storage & email thông báo:", fErr);
     }
@@ -300,6 +370,11 @@ export default function App() {
         formData.append("subject", `[ỨNG VIÊN MỚI] - ${candidate.fullName} ứng tuyển vị trí ${candidate.position}`);
         formData.append("from_name", "Tuyển dụng Thịnh Gia Land");
         formData.append("to", "thinhgiadigital@gmail.com");
+        
+        // Gửi kèm tệp CV thực tế qua Web3Forms để nhà tuyển dụng có thể tải về trực tiếp từ email
+        if (registerCVFile) {
+          formData.append("attachment", registerCVFile);
+        }
         
         const emailContent = `
 === THÔNG TIN ỨNG VIÊN MỚI ĐĂNG KÝ ===
@@ -353,6 +428,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
       setRegisterNote("");
       setRegisterCVName("");
       setRegisterCVData("");
+      setRegisterCVFile(null);
 
       // Automatically hide success alert in 5s
       setTimeout(() => {
@@ -366,7 +442,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
 
   const [isDragActive, setIsDragActive] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
@@ -375,13 +451,13 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
       }
       setSubmitError("");
       setRegisterCVName(file.name);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setRegisterCVData(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+      setRegisterCVFile(file);
+      try {
+        const compressedBase64 = await compressImageIfNeeded(file);
+        setRegisterCVData(compressedBase64);
+      } catch (err) {
+        console.warn("Lỗi khi xử lý nén tệp tin:", err);
+      }
     }
   };
 
@@ -395,7 +471,7 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
@@ -407,19 +483,20 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
       }
       setSubmitError("");
       setRegisterCVName(file.name);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setRegisterCVData(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+      setRegisterCVFile(file);
+      try {
+        const compressedBase64 = await compressImageIfNeeded(file);
+        setRegisterCVData(compressedBase64);
+      } catch (err) {
+        console.warn("Lỗi khi xử lý nén tệp tin:", err);
+      }
     }
   };
 
   const removeAttachedCV = () => {
     setRegisterCVName("");
     setRegisterCVData("");
+    setRegisterCVFile(null);
   };
 
   useEffect(() => {
@@ -1200,59 +1277,22 @@ Vui lòng truy cập trang Quản Trị Viên để xem chi tiết thông tin h�
                       <label className="text-xs font-black uppercase text-brand-brown-light tracking-widest block pl-1">
                         Hồ sơ CV của bạn
                       </label>
-                      <div
-                        onDragEnter={handleDrag}
-                        onDragOver={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDrop={handleDrop}
-                        className={`relative w-full p-6 md:p-8 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-3 transition-all ${
-                          isDragActive
-                            ? "bg-brand-yellow/10 border-brand-yellow scale-[1.01]"
-                            : registerCVName
-                              ? "bg-emerald-50/40 border-emerald-500/30 text-brand-brown"
-                              : "bg-brand-gray border-brand-brown/10 hover:bg-brand-yellow/5"
-                        }`}
-                      >
-                        {registerCVName ? (
-                          <div className="flex flex-col items-center text-center gap-2 w-full">
-                            <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shadow-sm">
-                              <FileText size={22} />
-                            </div>
-                            <div className="space-y-1 w-full max-w-[80%]">
-                              <p className="text-sm font-black text-brand-brown truncate" title={registerCVName}>
-                                {registerCVName}
-                              </p>
-                              <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">
-                                Đã sẵn sàng nộp
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={removeAttachedCV}
-                              className="mt-2 px-4 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-all flex items-center gap-1 cursor-pointer"
-                            >
-                              <X size={12} /> Hủy bỏ file
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="flex flex-col items-center justify-center gap-2 cursor-pointer w-full h-full py-2">
-                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-brand-brown shadow-sm group-hover:bg-brand-yellow/10 transition-all">
-                              <Upload size={20} className="text-[#a88d6c]" />
-                            </div>
-                            <span className="text-sm font-black text-brand-brown mt-1">
-                              Kéo thả file CV hoặc click để duyệt file
-                            </span>
-                            <span className="text-[10px] text-brand-brown/40 font-semibold uppercase tracking-wider">
-                              Hỗ trợ định dạng PDF, DOCX, DOC, JPG (Tối đa 10MB)
-                            </span>
-                            <input
-                              type="file"
-                              accept=".pdf,.docx,.doc,.jpg,.jpeg,.png"
-                              onChange={handleFileChange}
-                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                            />
-                          </label>
-                        )}
+                      <div className="w-full p-6 md:p-8 bg-brand-gray border border-brand-brown/10 rounded-3xl flex flex-col items-center justify-center text-center gap-3 shadow-inner">
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-brand-brown shadow-sm animate-bounce">
+                          <Mail size={22} className="text-brand-yellow" />
+                        </div>
+                        <p className="text-sm font-bold text-brand-brown leading-relaxed max-w-sm">
+                          Bạn ơi đừng quên nộp CV qua Email:<br />
+                          <a 
+                            href="mailto:info@thinhgialand.com" 
+                            className="text-brand-yellow hover:text-brand-brown hover:underline font-black text-base md:text-lg block mt-1 transition-colors"
+                          >
+                            info@thinhgialand.com
+                          </a>
+                          <span className="text-[10px] text-brand-brown/40 block mt-1 font-semibold uppercase tracking-wider">
+                            Tiêu đề gợi ý: [Họ Tên] - [Vị trí ứng tuyển]
+                          </span>
+                        </p>
                       </div>
                     </div>
 

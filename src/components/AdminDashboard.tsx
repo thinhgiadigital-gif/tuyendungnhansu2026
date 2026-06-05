@@ -27,7 +27,7 @@ import {
   Check
 } from "lucide-react";
 import { Candidate, Employee } from "../types";
-import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from "firebase/firestore";
 import { db, OperationType, handleFirestoreError, ensureAuth, auth } from "../firebase";
 
 interface AdminDashboardProps {
@@ -43,6 +43,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [selectedBranch, setSelectedBranch] = useState("Tất cả");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [showDeleteConfirmId, setShowDeleteConfirmId] = useState<string | null>(null);
+  const [downloadingCVId, setDownloadingCVId] = useState<string | null>(null);
 
   // Employee Management State variables
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -287,6 +288,15 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const handleDelete = async (id: string) => {
     try {
       await ensureAuth();
+      
+      // Tìm kiếm và xóa tất cả các phân đoạn CV (cvChunks) nếu có trước khi xóa hồ sơ chính
+      const chunksQuery = await getDocs(collection(db, "candidates", id, "cvChunks"));
+      const chunkPromises: Promise<void>[] = [];
+      chunksQuery.forEach((chunkSnap) => {
+        chunkPromises.push(deleteDoc(doc(db, "candidates", id, "cvChunks", chunkSnap.id)));
+      });
+      await Promise.all(chunkPromises);
+
       await deleteDoc(doc(db, "candidates", id));
       if (selectedCandidate?.id === id) {
         setSelectedCandidate(null);
@@ -309,17 +319,55 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     onBack();
   };
 
-  const handleDownloadCV = (candidate: Candidate) => {
-    if (!candidate.cvData || !candidate.cvName) return;
-    try {
-      const link = document.createElement("a");
-      link.href = candidate.cvData;
-      link.download = candidate.cvName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error("Lỗi tải xuống CV:", err);
+  const handleDownloadCV = async (candidate: Candidate) => {
+    if (!candidate.cvName) return;
+    
+    // Nếu có dữ liệu trực tiếp thì tải ngay
+    if (candidate.cvData) {
+      try {
+        const link = document.createElement("a");
+        link.href = candidate.cvData;
+        link.download = candidate.cvName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        console.error("Lỗi tải xuống CV:", err);
+      }
+      return;
+    }
+
+    // Nếu dữ liệu bị phân tách thành các chunks thì tải tất cả và ghép lại
+    if (candidate.hasChunks) {
+      setDownloadingCVId(candidate.id);
+      try {
+        const querySnapshot = await getDocs(collection(db, "candidates", candidate.id, "cvChunks"));
+        const docChunksList: any[] = [];
+        querySnapshot.forEach((docSnap) => {
+          docChunksList.push(docSnap.data());
+        });
+
+        // Sắp xếp các mảnh theo chỉ mục index
+        docChunksList.sort((a, b) => (a.index || 0) - (b.index || 0));
+
+        // Nối các phân đoạn lại thành chuỗi Base64 hoàn chỉnh
+        const fullBase64 = docChunksList.map(c => c.chunkData || "").join("");
+        if (!fullBase64) {
+          throw new Error("Không thể tìm thấy hoặc khôi phục dữ liệu các mảnh CV.");
+        }
+
+        const link = document.createElement("a");
+        link.href = fullBase64;
+        link.download = candidate.cvName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        console.error("Lỗi khi khôi phục CV từ các phân mảnh:", err);
+        alert("Lỗi khôi phục tệp CV từ đám mây. Vui lòng kiểm tra email ứng tuyển thinhgiadigital@gmail.com!");
+      } finally {
+        setDownloadingCVId(null);
+      }
     }
   };
 
@@ -969,7 +1017,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
               {/* Candidate CV Attachment block */}
               <div className="bg-white rounded-[1.5rem] border border-brand-brown/5 shadow-subtle p-6 space-y-3">
                 <h4 className="text-xs font-extrabold uppercase tracking-widest text-[#a88d6c] border-b border-brand-brown/5 pb-2">Hồ sơ CV đính kèm</h4>
-                {selectedCandidate.cvName && selectedCandidate.cvData ? (
+                {selectedCandidate.cvName && (selectedCandidate.cvData || selectedCandidate.hasChunks) ? (
                   <div className="flex items-center justify-between p-4 bg-emerald-50/40 border border-emerald-500/20 rounded-2xl">
                     <div className="flex items-center gap-3 overflow-hidden mr-2">
                       <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
@@ -980,16 +1028,45 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                           {selectedCandidate.cvName}
                         </p>
                         <p className="text-[10px] text-emerald-600 font-extrabold tracking-wider uppercase mt-0.5">
-                          Tập tin ngoại tuyến
+                          {selectedCandidate.hasChunks ? "Lưu trữ đám mây (Tệp lớn)" : "Lưu trữ đám mây"}
                         </p>
                       </div>
                     </div>
                     <button
+                      disabled={downloadingCVId === selectedCandidate.id}
                       onClick={() => handleDownloadCV(selectedCandidate)}
-                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.02] text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-800/10 shrink-0 cursor-pointer"
+                      className={`px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all font-extrabold text-xs shadow-md shrink-0 cursor-pointer ${
+                        downloadingCVId === selectedCandidate.id 
+                          ? "bg-slate-400 text-white cursor-wait animate-pulse" 
+                          : "bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.02] text-white shadow-emerald-800/10"
+                      }`}
                     >
-                      <Download size={13} /> TẢI VỀ
+                      {downloadingCVId === selectedCandidate.id ? (
+                        <>
+                          <Clock size={13} className="animate-spin" /> ĐANG TẢI...
+                        </>
+                      ) : (
+                        <>
+                          <Download size={13} /> TẢI VỀ
+                        </>
+                      )}
                     </button>
+                  </div>
+                ) : selectedCandidate.cvName ? (
+                  <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-2xl text-xs space-y-2">
+                    <div className="flex items-center gap-2 text-amber-800 font-extrabold text-xs">
+                      <AlertCircle size={16} className="text-amber-600" />
+                      Tập tin quá giới hạn lưu trữ ({selectedCandidate.cvName})
+                    </div>
+                    <p className="text-amber-700 font-semibold leading-relaxed">
+                      Hồ sơ này vượt kích thước tối đa của cơ sở dữ liệu cloud Firestore (để tránh lỗi tải trang). Tệp này đã được đính kèm tự động và gửi đầy đủ tới hòm thư quản lý tuyển dụng của bạn:
+                    </p>
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-100 font-mono text-[11px] text-brand-brown font-bold text-center select-all">
+                      thinhgiadigital@gmail.com
+                    </div>
+                    <p className="text-amber-600 font-medium">
+                      Vui lòng mở ứng dụng Gmail/Email của bạn để tải xuống tệp CV tương ứng với ứng viên này.
+                    </p>
                   </div>
                 ) : (
                   <div className="p-4 bg-brand-gray text-brand-brown/50 rounded-2xl text-xs font-bold flex items-center gap-2">

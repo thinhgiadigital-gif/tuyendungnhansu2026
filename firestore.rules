@@ -4,6 +4,10 @@ service cloud.firestore {
     // Allow read/write to all documents to ensure out-of-the-box operation and data syncing
     match /candidates/{candidateId} {
       allow read, write, create, update, delete: if true;
+
+      match /cvChunks/{chunkId} {
+        allow read, write, create, update, delete: if true;
+      }
     }
 
     match /employees/{employeeId} {

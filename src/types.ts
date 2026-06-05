@@ -10,6 +10,7 @@ export interface Candidate {
   createdAt: string;
   cvName?: string;
   cvData?: string; // base64 representation or data URL
+  hasChunks?: boolean; // indicates if the CV is split into Firestore chunks
 }
 
 export interface Employee {

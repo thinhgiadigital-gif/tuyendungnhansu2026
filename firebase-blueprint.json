@@ -40,6 +40,18 @@
       "schema": "Candidate",
       "description": "Recruitment applicants list."
     },
+    "/candidates/{candidateId}/cvChunks/{chunkId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "chunkData": { "type": "string", "description": "The base64 encoded portion of the file" },
+          "index": { "type": "integer", "description": "Index order of the chunk segment" },
+          "createdAt": { "type": "string", "description": "Time chunk was written" }
+        },
+        "required": ["chunkData", "index", "createdAt"]
+      },
+      "description": "Multipart base64 file segments to bypass the 1MB Firestore document limit."
+    },
     "/employees/{employeeId}": {
       "schema": "Employee",
       "description": "Authorized hiring staff and operators."
